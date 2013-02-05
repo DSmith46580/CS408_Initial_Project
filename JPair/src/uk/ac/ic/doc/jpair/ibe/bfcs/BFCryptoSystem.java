@@ -1,11 +1,13 @@
 package uk.ac.ic.doc.jpair.ibe.bfcs;
 
+import java.math.BigInteger;
 import java.util.Random;
 
 import uk.ac.ic.doc.jpair.api.Field;
 import uk.ac.ic.doc.jpair.api.FieldElement;
 import uk.ac.ic.doc.jpair.pairing.BigInt;
 import uk.ac.ic.doc.jpair.pairing.EllipticCurve;
+import uk.ac.ic.doc.jpair.pairing.Fp;
 import uk.ac.ic.doc.jpair.pairing.Point;
 
 /**
@@ -27,20 +29,23 @@ import uk.ac.ic.doc.jpair.pairing.Point;
  * @version 0.1
  */
 
-public class BFCryptoSystem implements Field, FieldElement {
+public class BFCryptoSystem  {
 
 	private int n_p;
 	private int n_q;
+	
+	//Public Parameters
 	private int q;
-	private int r;
-	private int p_;
-	
-	private int s; //Master Secret
-	
-	private Field field;
-	private FieldElement fe1;
-	private FieldElement fe2;
+	private int p;
+	private EllipticCurve E;
 	private String hashfcn;
+	private Point P;
+	private Point P_pub;
+	
+	private BigInt s; //Master Secret
+	private int r;
+	
+	//Used for checking for primes
 	private boolean IsPrime1;
 	private boolean IsPrime2;
 
@@ -84,8 +89,34 @@ public class BFCryptoSystem implements Field, FieldElement {
 			n_q = 512;
 			hashfcn = "2.16.840.1.101.3.4.2.3";
 		}
+		
 		determinevariables();
-		s = 2 + (int) (Math.random() * (((q-1) - 1 - 2) + 1));
+		
+		//Create the elliptic curve
+		BigInteger f = BigInteger.valueOf(q);
+		BigInt field = new BigInt(f);
+		BigInteger fe = BigInteger.ZERO;
+		BigInt fe1 = new BigInt(fe);
+		BigInteger fielde = BigInteger.ONE;
+		BigInt fe2 = new BigInt(fielde);
+		E = new EllipticCurve(new Fp(field), fe1, fe2);
+		
+		BigInteger random1 = BigInteger.valueOf(0);
+		BigInt pointx = new BigInt(random1);
+		BigInteger random2 = BigInteger.valueOf(0);
+		BigInt pointy = new BigInt(random2);
+		
+		Point point_ = new Point(pointx,pointy);
+		
+		P = E.multiply(point_, BigInt.valueOf(12*r));
+		
+		int s1 = 2 + (int) (Math.random() * (((q-1) - 1 - 2) + 1));
+		s = new BigInt(BigInteger.valueOf(s1));
+		P_pub = E.multiply(P, s);
+		
+		
+		
+		
 		
 	}
 	
@@ -98,13 +129,24 @@ public class BFCryptoSystem implements Field, FieldElement {
 	 * This method calls upon one of the supporting algorithms
 	 */
 	public void derivation(String id) {
-		Point Q_ID = HashToPoint(E, p_, q, id, hashfcn);
+		//Point Q_ID = HashToPoint(E, p, q, id, hashfcn);
 	}
 
-	
+	/**
+	 * The Extraction algorithm algorithm.
+	 * 
+	 * @param ID - Identity String id
+	 * @return S_ID - Point in order q in E(F_p)
+	 * 
+	 * This method calls upon one of the supporting algorithms
+	 */
+	public void extraction(String id) {
+		//Point Q_ID = HashToPoint(E, p, q, id, hashfcn);
+		//Point S_ID s*Q_ID
+	}
 	/**
 	 * This method is used by the set-up algoritm in order to determine some of the public variables
-	 * q,p_ and P
+	 * q,p_ and 
 	 */
 	public void determinevariables() {
 		while (IsPrime1 = false) {
@@ -122,28 +164,21 @@ public class BFCryptoSystem implements Field, FieldElement {
 		}
 
 		while (IsPrime2 = false) {
+			
 			r = (int) Math.random();
-			p_ = 12 * r * q - 1;
+			p = 12 * r * q - 1;
 			// checks whether int is prime or not.
 			// check if n is a multiple of 2
-			if (p_ % 2 == 0)
+			if (p % 2 == 0)
 				IsPrime2 = false;
 			// if not, then just check the odds
-			for (int i = 3; i * i <= p_; i += 2) {
-				if (p_ % i == 0)
+			for (int i = 3; i * i <= p; i += 2) {
+				if (p % i == 0)
 					IsPrime2 = false;
 			}
 			IsPrime2 = true;
 		}
 
-		Point p = new Point(fe1, fe2);
-		// Select random point p
-		// p.setX();
-		// p.setY(newY)
-
-		// Point P = [12*r]*p
-		// if(p=0) {
-		// determinevariables();
-		// }
+		
 	}
 }
