@@ -144,6 +144,19 @@ public class BFCryptoSystem  {
 		//Point Q_ID = HashToPoint(E, p, q, id, hashfcn);
 		//Point S_ID s*Q_ID
 	}
+	
+	
+	
+	public void encryption() {
+		
+	}
+	
+	
+	public void decryption() {
+		
+	}
+	
+	
 	/**
 	 * This method is used by the set-up algoritm in order to determine some of the public variables
 	 * q,p_ and 
