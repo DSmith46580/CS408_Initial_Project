@@ -5,6 +5,7 @@ import java.util.Random;
 
 import uk.ac.ic.doc.jpair.api.Field;
 import uk.ac.ic.doc.jpair.api.FieldElement;
+import uk.ac.ic.doc.jpair.ibe.supportingalgorithms.SupportingAlgorithms;
 import uk.ac.ic.doc.jpair.pairing.BigInt;
 import uk.ac.ic.doc.jpair.pairing.EllipticCurve;
 import uk.ac.ic.doc.jpair.pairing.Fp;
@@ -29,23 +30,26 @@ import uk.ac.ic.doc.jpair.pairing.Point;
  * @version 0.1
  */
 
-public class BFCryptoSystem  {
+public class BFCryptoSystem {
 
 	private int n_p;
 	private int n_q;
-	
-	//Public Parameters
+
+	// Public Parameters
 	private int q;
 	private int p;
 	private EllipticCurve E;
 	private String hashfcn;
 	private Point P;
 	private Point P_pub;
-	
-	private BigInt s; //Master Secret
+
+	private BigInt s; // Master Secret
 	private int r;
-	
-	//Used for checking for primes
+
+	private Point Q_ID;
+	private Point S_ID;
+
+	// Used for checking for primes
 	private boolean IsPrime1;
 	private boolean IsPrime2;
 
@@ -89,10 +93,10 @@ public class BFCryptoSystem  {
 			n_q = 512;
 			hashfcn = "2.16.840.1.101.3.4.2.3";
 		}
-		
+
 		determinevariables();
-		
-		//Create the elliptic curve
+
+		// Create the elliptic curve
 		BigInteger f = BigInteger.valueOf(q);
 		BigInt field = new BigInt(f);
 		BigInteger fe = BigInteger.ZERO;
@@ -100,72 +104,95 @@ public class BFCryptoSystem  {
 		BigInteger fielde = BigInteger.ONE;
 		BigInt fe2 = new BigInt(fielde);
 		E = new EllipticCurve(new Fp(field), fe1, fe2);
-		
-		BigInteger random1 = BigInteger.valueOf(0);
+
+		BigInteger random1 = BigInteger.valueOf((long) Math.random());
 		BigInt pointx = new BigInt(random1);
-		BigInteger random2 = BigInteger.valueOf(0);
+		BigInteger random2 = BigInteger.valueOf((long) Math.random());
 		BigInt pointy = new BigInt(random2);
-		
-		Point point_ = new Point(pointx,pointy);
-		
-		P = E.multiply(point_, BigInt.valueOf(12*r));
-		
-		int s1 = 2 + (int) (Math.random() * (((q-1) - 1 - 2) + 1));
+
+		Point point_ = new Point(pointx, pointy);
+
+		P = E.multiply(point_, BigInt.valueOf(12 * r));
+
+		int s1 = 2 + (int) (Math.random() * (((q - 1) - 1 - 2) + 1));
 		s = new BigInt(BigInteger.valueOf(s1));
 		P_pub = E.multiply(P, s);
-		
-		
-		
-		
-		
-	}
-	
-	/**
-	 * The Derivation algorithm.
-	 * 
-	 * @param ID - Identity String id
-	 * @return Q_ID - Point in order q in E(F_p)
-	 * 
-	 * This method calls upon one of the supporting algorithms
-	 */
-	public void derivation(String id) {
-		//Point Q_ID = HashToPoint(E, p, q, id, hashfcn);
+
 	}
 
 	/**
-	 * The Extraction algorithm algorithm.
+	 * The Derivation algorithm. This method calls upon one of the supporting algorithms
 	 * 
-	 * @param ID - Identity String id
-	 * @return S_ID - Point in order q in E(F_p)
+	 * @param ID
+	 *            - Identity String id
+	 * @return Q_ID - Point in order q in E(F_p)
 	 * 
-	 * This method calls upon one of the supporting algorithms
+	 *         
 	 */
-	public void extraction(String id) {
-		//Point Q_ID = HashToPoint(E, p, q, id, hashfcn);
-		//Point S_ID s*Q_ID
+	public void derivation(String ID) {
+		Q_ID = SupportingAlgorithms.HashToPoint(E, p, q, ID, hashfcn);
 	}
-	
-	
-	
-	public void encryption() {
-		
-	}
-	
-	
-	public void decryption() {
-		
-	}
-	
+
 	
 	/**
-	 * This method is used by the set-up algoritm in order to determine some of the public variables
-	 * q,p_ and 
+	 * The Extraction algorithm. This method calls upon one of the supporting algorithms
+	 * 
+	 * @param ID
+	 *            - Identity String ID
+	 * @return S_ID - Point in order q in E(F_p)
+	 * 
+	 *         
+	 */
+	public void extraction(String ID) {
+
+		S_ID = E.multiply(Q_ID, s);
+	}
+
+
+	/**
+	 * The Encryption algorithm. This method calls the supporting algorithms
+	 * 
+	 * @param ID
+	 *            - Identity String id
+	 * @param PT -
+	 *            Plaintext String m of size |m| octets
+	 * @return Ciphertext tuple (U,V,W)
+	 * 
+	 *         
+	 */
+	public void encryption(String PT, String ID) {
+
+		int hashlen = hashfcn.length();
+		int rho = 0 + (int) (Math.random() * ((2 ^ hashlen / 8 - 1 - 0) + 1));
+		String rhos = String.valueOf(rho);
+
+	}
+
+
+	/**
+	 * The Decryption algorithm. This method calls the supporting algorithms
+	 * 
+	 * @param S_ID
+	 *            - Private key point
+	 * @param CT -
+	 *            Ciphertext triple (U,V,W)
+	 * @return Decrypted Plaintext or an invalid ciphertext flag
+	 * 
+	 *         
+	 */
+	public void decryption() {
+
+	}
+
+	/**
+	 * This method is used by the set-up algorithm in order to determine some of
+	 * the public variables q and p_
 	 */
 	public void determinevariables() {
 		while (IsPrime1 = false) {
 			q = 0 + (int) (Math.random() * ((2 ^ n_q - 1 - 0) + 1));
-			// checks whether int is prime or not.
-			// check if n is a multiple of 2
+			// checks whether q is prime or not.
+			// check if q is a multiple of 2
 			if (q % 2 == 0)
 				IsPrime1 = false;
 			// if not, then just check the odds
@@ -177,11 +204,11 @@ public class BFCryptoSystem  {
 		}
 
 		while (IsPrime2 = false) {
-			
+
 			r = (int) Math.random();
 			p = 12 * r * q - 1;
-			// checks whether int is prime or not.
-			// check if n is a multiple of 2
+			// checks whether p is prime or not.
+			// check if p is a multiple of 2
 			if (p % 2 == 0)
 				IsPrime2 = false;
 			// if not, then just check the odds
@@ -192,6 +219,9 @@ public class BFCryptoSystem  {
 			IsPrime2 = true;
 		}
 
-		
+		if (IsPrime1 && IsPrime2 != true) {
+			determinevariables();
+		}
+
 	}
 }
