@@ -1,6 +1,8 @@
 package uk.ac.ic.doc.jpair.ibe.supportingalgorithms;
 
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import uk.ac.ic.doc.jpair.pairing.BigInt;
 import uk.ac.ic.doc.jpair.pairing.EllipticCurve;
@@ -17,9 +19,11 @@ import uk.ac.ic.doc.jpair.pairing.Point;
 
 
 public class SupportingAlgorithms {
+	
+	MessageDigest messageDigest;
 
-	public static Point HashToPoint(EllipticCurve e, int p, int q, String id,
-			String hashfcn) {
+	public Point HashToPoint(EllipticCurve e, int p, int q, String id,
+			String hashfcn) throws NoSuchAlgorithmException {
 		
 		int y = HashToRange(id,p,hashfcn);
 		int x = (y^2 -1)^((2*p-1)/3)%p;
@@ -40,7 +44,9 @@ public class SupportingAlgorithms {
 		return Q;
 	}
 
-	private static int HashToRange(String id, int p, String hashfcn) {
+	public int HashToRange(String id, int p, String hashfcn) throws NoSuchAlgorithmException {
+	    MessageDigest messageDigest = MessageDigest.getInstance(hashfcn);
+
 		int hashlen = hashfcn.length();
 		int v_0 = 0;
 		String h_0 = new String();
@@ -48,10 +54,29 @@ public class SupportingAlgorithms {
 			h_0.concat("0x00");
 		}
 		
-		for (int j=1;j<2;j++) {
-			
+		for (int j=1;j<1;j++) {
+
+			String t_i = h_0 + id;
+			messageDigest.update(t_i.getBytes());
+			h_0 = new String(messageDigest.digest());
+			long a_i = Long.parseLong(h_0);
+			v_0 = (int) (256^hashlen * v_0 + a_i);
+		
 		}
-		return 0;
+		
+		for (int l=1;l<1;l++) {
+
+			String t_i = h_0 + id;
+			messageDigest.update(t_i.getBytes());
+			h_0 = new String(messageDigest.digest());
+			long a_i = Long.parseLong(h_0);
+			v_0 = (int) (256^hashlen * v_0 + a_i);
+		
+		}
+		
+		return v_0%p;
+		
 	}
+
 
 }

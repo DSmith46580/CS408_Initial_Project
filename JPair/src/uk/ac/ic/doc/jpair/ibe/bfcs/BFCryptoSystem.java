@@ -1,6 +1,9 @@
 package uk.ac.ic.doc.jpair.ibe.bfcs;
 
+import java.lang.reflect.Array;
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
 import uk.ac.ic.doc.jpair.api.Field;
@@ -10,6 +13,7 @@ import uk.ac.ic.doc.jpair.pairing.BigInt;
 import uk.ac.ic.doc.jpair.pairing.EllipticCurve;
 import uk.ac.ic.doc.jpair.pairing.Fp;
 import uk.ac.ic.doc.jpair.pairing.Point;
+import uk.ac.ic.doc.jpair.pairing.TatePairing;
 
 /**
  * This class implements the Boneh-Franklin Identity-Base Encryption (IBE)
@@ -34,6 +38,8 @@ public class BFCryptoSystem {
 
 	private int n_p;
 	private int n_q;
+	private MessageDigest messageDigest;
+	private SupportingAlgorithms sa = new SupportingAlgorithms();
 
 	// Public Parameters
 	private int q;
@@ -52,6 +58,7 @@ public class BFCryptoSystem {
 	// Used for checking for primes
 	private boolean IsPrime1;
 	private boolean IsPrime2;
+	
 
 	/**
 	 * The Setup algorithm.
@@ -61,39 +68,42 @@ public class BFCryptoSystem {
 	 *            7680 or 15360
 	 * @return A set of public parameters (version, E, p, q, P, P-pub, hashfcn)
 	 *         and the corresponding Master Secret 's'
+	 * @throws NoSuchAlgorithmException 
 	 */
-	public void BFSetup1(int n) {
+	public void BFSetup1(int n) throws NoSuchAlgorithmException {
 
 		if (n == 1024) {
 			n_p = 512;
 			n_q = 160;
-			hashfcn = "1.3.14.3.2.26";
+			hashfcn = "SHA-1";
 		}
 
-		else if (n == 2048) {
-			n_p = 1024;
-			n_q = 224;
-			hashfcn = "2.16.840.1.101.3.4.2.4";
-		}
+//      SHA-224 is listed in the RFC standard but has not yet been implemented in java.
+//		else if (n == 2048) {
+//			n_p = 1024;
+//			n_q = 224;
+//			hashfcn = "SHA-224";
+//		}
 
 		else if (n == 3072) {
 			n_p = 1536;
 			n_q = 256;
-			hashfcn = "2.16.840.1.101.3.4.2.1";
+			hashfcn = "SHA-256";
 		}
 
 		else if (n == 7680) {
 			n_p = 3840;
 			n_q = 384;
-			hashfcn = "2.16.840.1.101.3.4.2.2";
+			hashfcn = "SHA-384";
 		}
 
 		else if (n == 15360) {
 			n_p = 7680;
 			n_q = 512;
-			hashfcn = "2.16.840.1.101.3.4.2.3";
+			hashfcn = "SHA-512";
 		}
 
+	    messageDigest = MessageDigest.getInstance(hashfcn);
 		determinevariables();
 
 		// Create the elliptic curve
@@ -126,11 +136,12 @@ public class BFCryptoSystem {
 	 * @param ID
 	 *            - Identity String id
 	 * @return Q_ID - Point in order q in E(F_p)
+	 * @throws NoSuchAlgorithmException 
 	 * 
 	 *         
 	 */
-	public void derivation(String ID) {
-		Q_ID = SupportingAlgorithms.HashToPoint(E, p, q, ID, hashfcn);
+	public void derivation(String ID) throws NoSuchAlgorithmException {
+		Q_ID = sa.HashToPoint(E, p, q, ID, hashfcn);
 	}
 
 	
@@ -157,15 +168,40 @@ public class BFCryptoSystem {
 	 * @param PT -
 	 *            Plaintext String m of size |m| octets
 	 * @return Ciphertext tuple (U,V,W)
+	 * @throws NoSuchAlgorithmException 
 	 * 
 	 *         
 	 */
-	public void encryption(String PT, String ID) {
+	public void encryption(String PT, String ID) throws NoSuchAlgorithmException {
 
-		int hashlen = hashfcn.length();
-		int rho = 0 + (int) (Math.random() * ((2 ^ hashlen / 8 - 1 - 0) + 1));
-		String rhos = String.valueOf(rho);
-
+		// Come back to this point
+		//int hashlen = hashfcn.length();
+		//
+		
+		messageDigest.update(PT.getBytes());
+		String t = new String(messageDigest.digest());
+		int l1 = sa.HashToRange(t, q, hashfcn);
+		BigInteger l2 = BigInteger.valueOf(l1);
+		BigInt l = new BigInt(l2);
+		Point U = E.multiply(P, l);
+		
+	
+		BigInteger p1 = BigInteger.valueOf(p);
+		BigInt P = new BigInt(p1);
+		BigInteger q1 = BigInteger.valueOf(q);
+		BigInt Q = new BigInt(q1);
+		TatePairing tatep = new TatePairing (E,P,Q);
+		BigInt theta = (BigInt) tatep.compute(P_pub, Q_ID);
+		int theta1 = theta.intValue();
+		int theta_ = (int) Math.pow(theta1,1);
+		String z = sa.Canonical(p,k,0,theta_);
+		messageDigest.update(z.getBytes());
+		String w = new String(messageDigest.digest());
+        
+		//V = w^rho;
+		//W = sa.HashBytes(nID,rho,hashfcn)^m
+		
+		//Create Array and add U,V and W
 	}
 
 
@@ -180,8 +216,25 @@ public class BFCryptoSystem {
 	 * 
 	 *         
 	 */
-	public void decryption() {
-
+	public void decryption(Point S_ID, Array triple) {
+		int hashlen = hashfcn.length();
+		//theta = sa.Pairing(E, p, q, U, S_ID);
+	    //z=Canonical(p,k.0,theta);
+	    //messageDigest.update(z.getBytes());
+	    //String w = new String(messageDigest.digest());
+		//rho = x^V
+		//m= sa.HashByte(W_,rho,hashfcn)^W;
+		//messageDigest.update(m.getBytes());
+	    //String t = new String(messageDigest.digest());
+		// l1 = sa.HashToRange(rho || t,q,hashfcn);
+		//BigInteger l2 = BigInteger.valueOf(l1);
+		//BigInt l = new BigInt(l2);
+		// if (U = E.multiply(P,l) {
+		// return M
+		//}
+		//else {
+		//System.out.println("Invalid Cyphercheck"):
+		//}
 	}
 
 	/**
