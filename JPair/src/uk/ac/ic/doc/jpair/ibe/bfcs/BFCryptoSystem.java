@@ -176,11 +176,12 @@ public class BFCryptoSystem {
 
 		// Come back to this point
 		//int hashlen = hashfcn.length();
-		//
+		//Call Q_ID = sa.HashToPoint(E, p, q, ID, hashfcn);
 		
 		messageDigest.update(PT.getBytes());
 		String t = new String(messageDigest.digest());
 		int l1 = sa.HashToRange(t, q, hashfcn);
+		//Dont have to do this, can simply use BigInt.valueOf();
 		BigInteger l2 = BigInteger.valueOf(l1);
 		BigInt l = new BigInt(l2);
 		Point U = E.multiply(P, l);
@@ -218,14 +219,16 @@ public class BFCryptoSystem {
 	 */
 	public void decryption(Point S_ID, Array triple) {
 		int hashlen = hashfcn.length();
+		
+		//See encryption method for pairing
 		//theta = sa.Pairing(E, p, q, U, S_ID);
-	    //z=Canonical(p,k.0,theta);
-	    //messageDigest.update(z.getBytes());
-	    //String w = new String(messageDigest.digest());
+	        //z=Canonical(p,k.0,theta);
+	        //messageDigest.update(z.getBytes());
+	        //String w = new String(messageDigest.digest());
 		//rho = x^V
 		//m= sa.HashByte(W_,rho,hashfcn)^W;
 		//messageDigest.update(m.getBytes());
-	    //String t = new String(messageDigest.digest());
+	        //String t = new String(messageDigest.digest());
 		// l1 = sa.HashToRange(rho || t,q,hashfcn);
 		//BigInteger l2 = BigInteger.valueOf(l1);
 		//BigInt l = new BigInt(l2);
