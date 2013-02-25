@@ -113,8 +113,11 @@ public class BFCryptoSystem {
 		BigInt fe2 = BigInt.ONE;
 		E = new EllipticCurve(new Fp(field), fe1, fe2);
 
-		BigInt pointx = BigInt.valueOf((long) Math.random());
-		BigInt pointy = BigInt.valueOf((long) Math.random());
+		Random rand = new Random(); 
+		int tempx = rand.nextInt(p);
+		int tempy = rand.nextInt(p);
+		BigInt pointx = BigInt.valueOf(tempx);
+		BigInt pointy = BigInt.valueOf(tempy);
 		Point point_ = new Point(pointx, pointy);
 
 		Point P = E.multiply(point_, BigInt.valueOf(12 * r));
@@ -193,9 +196,13 @@ public class BFCryptoSystem {
 		BigInt P = pp.getP();
 		BigInt Q = pp.getQ();
 		TatePairing tatep = new TatePairing(pp.getEc(), P, Q);
+		
+		//Need help with this, cannot cast from FieldElement to BigInt
 		BigInt theta = (BigInt) tatep.compute(pp.getPublic_point(), Q_ID);
+		
+		
 		int theta1 = theta.intValue();
-		int theta_ = (int) Math.pow(theta1, 1);
+		int theta_ = (int) Math.pow(theta1, l1);
 		String z = sa.Canonical(p, 0, theta_);
 		messageDigest.update(z.getBytes());
 		String w = new String(messageDigest.digest());
@@ -266,8 +273,9 @@ public class BFCryptoSystem {
 	public void determinevariables() {
 		System.out.println("Hello");
 
+		Random rand = new Random(); 
 	System.out.println("Hello 1");
-	q = 0 + (int) (Math.random() * ((2 ^ n_q - 0) + 1));
+	q = rand.nextInt(2 ^ n_q);
 	boolean check1 = this.isPrime(q);
 	// checks whether q is prime or not.
 	// check if q is a multiple of 2
