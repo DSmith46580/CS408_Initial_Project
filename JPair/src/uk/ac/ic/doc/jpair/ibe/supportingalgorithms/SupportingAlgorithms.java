@@ -45,32 +45,30 @@ public class SupportingAlgorithms {
 			throws NoSuchAlgorithmException {
 		MessageDigest messageDigest = MessageDigest.getInstance(hashfcn);
 
+		p = (int) Math.ceil(Math.log(p)/8);
 		int hashlen = messageDigest.getDigestLength();
 		int v_0 = 0;
+		int v_1 = 0;
+		int a_i;
 		String h_0 = new String();
+		String h_1;
+		String t_i = "";
+		
 		for (int i = 0; i < hashlen; i++) {
 			h_0.concat("0x00");
 		}
 
-		for (int j = 1; j < 1; j++) {
+		for (int j = 1; j <= 1; j++) {
 
-			String t_i = h_0 + id;
+			t_i = h_0.concat(id);
 			messageDigest.update(t_i.getBytes());
 			h_0 = new String(messageDigest.digest());
-			long a_i = Long.parseLong(h_0);
-			v_0 = (int) (256 ^ hashlen * v_0 + a_i);
+			a_i = Integer.valueOf(h_0);
+			v_0 = (int) (Math.pow(256, hashlen) * v_0 + a_i);
 
 		}
 
-		for (int l = 1; l < 1; l++) {
-
-			String t_i = h_0 + id;
-			messageDigest.update(t_i.getBytes());
-			h_0 = new String(messageDigest.digest());
-			long a_i = Long.parseLong(h_0);
-			v_0 = (int) (256 ^ hashlen * v_0 + a_i);
-
-		}
+		
 
 		return v_0 % p;
 
