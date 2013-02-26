@@ -11,6 +11,7 @@ import uk.ac.ic.doc.jpair.api.Field;
 import uk.ac.ic.doc.jpair.api.FieldElement;
 import uk.ac.ic.doc.jpair.ibe.supportingalgorithms.SupportingAlgorithms;
 import uk.ac.ic.doc.jpair.pairing.BigInt;
+import uk.ac.ic.doc.jpair.pairing.Complex;
 import uk.ac.ic.doc.jpair.pairing.EllipticCurve;
 import uk.ac.ic.doc.jpair.pairing.Fp;
 import uk.ac.ic.doc.jpair.pairing.Point;
@@ -51,9 +52,6 @@ public class BFCryptoSystem {
 
 	private Point Q_ID;
 	private Point S_ID;
-
-	
-	
 
 	/**
 	 * The Setup algorithm.
@@ -113,7 +111,7 @@ public class BFCryptoSystem {
 		BigInt fe2 = BigInt.ONE;
 		E = new EllipticCurve(new Fp(field), fe1, fe2);
 
-		Random rand = new Random(); 
+		Random rand = new Random();
 		int tempx = rand.nextInt(p);
 		int tempy = rand.nextInt(p);
 		BigInt pointx = BigInt.valueOf(tempx);
@@ -184,32 +182,32 @@ public class BFCryptoSystem {
 		int hashlen = messageDigest.getDigestLength();
 		Q_ID = sa.HashToPoint(pp.ec, pp.getP_int(), pp.getQ_int(), ID,
 				pp.getHash());
-		int rho_int = (int) (Math.random() * ((hashlen / 8 - 0) + 1));
-		BigInt rho_bigint = BigInt.valueOf(rho_int);
-		String rho = rho_bigint.toString();
+
+		String rho = createRho(hashlen);
 		messageDigest.update(PT.getBytes());
 		String t = new String(messageDigest.digest());
-		int l1 = sa.HashToRange(t, pp.getQ_int(), pp.getHash());
+		int l1 = sa.HashToRange(rho.concat(t), pp.getQ_int(), pp.getHash());
 		BigInt l = BigInt.valueOf(l1);
 		Point U = pp.ec.multiply(pp.getPoint(), l);
 
 		BigInt P = pp.getP();
 		BigInt Q = pp.getQ();
 		TatePairing tatep = new TatePairing(pp.getEc(), P, Q);
-		
-		//Need help with this, cannot cast from FieldElement to BigInt
-		BigInt theta = (BigInt) tatep.compute(pp.getPublic_point(), Q_ID);
-		
-		
-		int theta1 = theta.intValue();
+
+		// Need help with this, cannot cast from FieldElement to BigInt
+		Complex theta_fp = (Complex) tatep.compute(pp.getPublic_point(), Q_ID);
+		BigInt theta_bi = theta_fp.getReal();
+
+		int theta1 = theta_bi.intValue();
+
 		int theta_ = (int) Math.pow(theta1, l1);
 		String z = sa.Canonical(p, 0, theta_);
 		messageDigest.update(z.getBytes());
 		String w = new String(messageDigest.digest());
 
 		String V = sa.xorHex(w, rho);
-
-		String temp = sa.HashBytes(PT.length() * 8, rho, pp.getHash());
+		byte[] temp2 = PT.getBytes();
+		String temp = sa.HashBytes(temp2.length, rho, pp.getHash());
 
 		String W = sa.xorHex(temp, PT);
 
@@ -218,6 +216,25 @@ public class BFCryptoSystem {
 		tuple.add(V);
 		tuple.add(W);
 		return tuple;
+	}
+
+	public String createRho(int hashlen) {
+		System.out.println(hashlen);
+		Random rand = new Random();
+		String rho = null;
+		StringBuilder sb = new StringBuilder();
+		int[] temp = new int[hashlen];
+		for (int i = 0; i < hashlen; i++) {
+			System.out.println(i);
+			temp[i] = rand.nextInt();
+		}
+		for (int j = 0; j < hashlen; j++) {
+			System.out.println(j);
+
+			sb.append(temp[j]);
+		}
+		rho = sb.toString();
+		return rho;
 	}
 
 	/**
@@ -240,7 +257,11 @@ public class BFCryptoSystem {
 		BigInt Q = pp.getQ();
 		TatePairing tatep = new TatePairing(pp.getEc(), P, Q);
 		Point U = (Point) triple.get(0);
-		BigInt theta_bi = (BigInt) tatep.compute(U, S_ID);
+
+		Complex theta_fp = (Complex) tatep.compute(U, S_ID);
+
+		BigInt theta_bi = theta_fp.getReal();
+
 		int theta = theta_bi.intValue();
 		String z = sa.Canonical(p, 0, theta);
 		messageDigest.update(z.getBytes());
@@ -248,7 +269,9 @@ public class BFCryptoSystem {
 		String V = (String) triple.get(1);
 		String rho = sa.xorHex(w, V);
 		String W = (String) triple.get(2);
-		String m = sa.HashBytes(W.length() / 8, rho, pp.getHash());
+		byte[] temp = W.getBytes();
+		
+		String m = sa.HashBytes(temp.length, rho, pp.getHash());
 		messageDigest.update(m.getBytes());
 		String t = new String(messageDigest.digest());
 		String rho_t = rho.concat(t);
@@ -259,6 +282,7 @@ public class BFCryptoSystem {
 		} else {
 			System.out.println("Invalid Cyphercheck");
 		}
+		System.out.println(m);
 		return null;
 	}
 
@@ -271,36 +295,27 @@ public class BFCryptoSystem {
 	 * the public variables q and p
 	 */
 	public void determinevariables() {
-		System.out.println("Hello");
-
-		Random rand = new Random(); 
-	System.out.println("Hello 1");
-	q = rand.nextInt(2 ^ n_q);
-	boolean check1 = this.isPrime(q);
-	// checks whether q is prime or not.
-	// check if q is a multiple of 2
-
-		
-
-	System.out.println("Hello 2");
-	r = 2;
-	p = 12 * r * q - 1;
-	boolean check2 = this.isPrime(q);
+		Random rand = new Random();
+		q = rand.nextInt(2 ^ n_q);
+		boolean check1 = this.isPrime(q);
+		// checks whether q is prime or not.
+		// check if q is a multiple of 2
+		r = 2;
+		p = 12 * r * q - 1;
+		boolean check2 = this.isPrime(q);
 		if (check1 && check2 == true) {
-			
-		}
-		else {
+
+		} else {
 			determinevariables();
 		}
-		}
-	
+	}
+
 	boolean isPrime(int n) {
-	    for(int i=2;i<n;i++) {
-	        if(n%i==0)
-	            return false;
-	    }
-	    return true;
+		for (int i = 2; i < n; i++) {
+			if (n % i == 0)
+				return false;
+		}
+		return true;
 	}
 
-	}
-
+}
