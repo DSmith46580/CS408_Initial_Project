@@ -15,6 +15,7 @@ import uk.ac.ic.doc.jpair.pairing.Complex;
 import uk.ac.ic.doc.jpair.pairing.EllipticCurve;
 import uk.ac.ic.doc.jpair.pairing.Fp;
 import uk.ac.ic.doc.jpair.pairing.Point;
+import uk.ac.ic.doc.jpair.pairing.Predefined;
 import uk.ac.ic.doc.jpair.pairing.TatePairing;
 
 /**
@@ -38,20 +39,7 @@ import uk.ac.ic.doc.jpair.pairing.TatePairing;
 
 public class BFCryptoSystem {
 
-	private int n_p;
-	private int n_q;
-	private MessageDigest messageDigest;
-	private SupportingAlgorithms sa = new SupportingAlgorithms();
-
-	// Public Parameters
-	int p;
-	int q;
-
-	private BigInt s; // Master Secret
-	private int r;
-
-	private Point Q_ID;
-	private Point S_ID;
+	static BigInt secret;
 
 	/**
 	 * The Setup algorithm.
@@ -64,14 +52,21 @@ public class BFCryptoSystem {
 	 *         and the corresponding Master Secret 's'
 	 * @throws NoSuchAlgorithmException
 	 */
-	public PublicParameter BFSetup1(int n) throws NoSuchAlgorithmException {
+	static public PublicParameter BFSetup1(int n) throws NoSuchAlgorithmException {
 
 		String hashfcn = "";
 		EllipticCurve E;
+		int n_p = 0;
+		int n_q = 0;
+		Point P;
+		Point P_;
+		BigInt q;
+		BigInt r;
+		BigInt p;
 
 		if (n == 1024) {
-			n_p = 512;
-			n_q = 160;
+			 n_p = 512;
+			 n_q = 160;
 			hashfcn = "SHA-1";
 		}
 
@@ -83,48 +78,40 @@ public class BFCryptoSystem {
 		// hashfcn = "SHA-224";
 		// }
 
-		else if (n == 3072) {
-			n_p = 1536;
-			n_q = 256;
-			hashfcn = "SHA-256";
-		}
+		// The Following are not implemented based on the curve used from the JPair Project
+		// else if (n == 3072) {
+		// n_p = 1536;
+		// n_q = 256;
+		// hashfcn = "SHA-256";
+		// }
+		//
+		// else if (n == 7680) {
+		// n_p = 3840;
+		// n_q = 384;
+		// hashfcn = "SHA-384";
+		// }
+		//
+		// else if (n == 15360) {
+		// n_p = 7680;
+		// n_q = 512;
+		// hashfcn = "SHA-512";
+		// }
 
-		else if (n == 7680) {
-			n_p = 3840;
-			n_q = 384;
-			hashfcn = "SHA-384";
-		}
-
-		else if (n == 15360) {
-			n_p = 7680;
-			n_q = 512;
-			hashfcn = "SHA-512";
-		}
-
-		messageDigest = MessageDigest.getInstance(hashfcn);
-
-		determinevariables();
-
-		// Create the elliptic curve
-		BigInt field = BigInt.valueOf(p);
-		BigInt fe1 = BigInt.ZERO;
-		BigInt fe2 = BigInt.ONE;
-		E = new EllipticCurve(new Fp(field), fe1, fe2);
-
-		Random rand = new Random();
-		int tempx = rand.nextInt(p);
-		int tempy = rand.nextInt(p);
-		BigInt pointx = BigInt.valueOf(tempx);
-		BigInt pointy = BigInt.valueOf(tempy);
-		Point point_ = new Point(pointx, pointy);
-
-		Point P = E.multiply(point_, BigInt.valueOf(12 * r));
-
-		int s1 = 2 + (int) (Math.random() * (((q - 2)) + 1));
-		s = BigInt.valueOf(s1);
-		Point P_pub = E.multiply(point_, s);
-
-		return new PublicParameter(E, p, q, P, P_pub, hashfcn);
+		MessageDigest messageDigest = MessageDigest.getInstance(hashfcn);
+        Random rnd =new Random();
+		TatePairing sstate = Predefined.ssTate();
+		do{
+		q = new BigInt(n_p, 100, rnd);
+		r = new BigInt(n_p, rnd );
+		p = determinevariables(r, q, n_p, rnd);
+		P_ = sstate.getCurve().randomPoint(rnd);
+		P =  sstate.getCurve().multiply(P_, BigInt.valueOf(12).multiply(r));
+		} while (P !=null);
+		int range = q.intValue() -1;
+		secret = new BigInt(range,rnd);
+		Point P_Pub = sstate.getCurve().multiply(P, secret);
+		
+		return new PublicParameter(sstate, p, q, P, P_Pub, hashfcn);
 	}
 
 	/**
@@ -141,8 +128,9 @@ public class BFCryptoSystem {
 	public Point derivation(String ID, PublicParameter pp)
 			throws NoSuchAlgorithmException {
 
-		return Q_ID = sa.HashToPoint(pp.ec, pp.getP_int(), pp.getQ_int(), ID,
+		 Point Q_ID = SupportingAlgorithms.HashToPoint(pp.getSstate().getCurve2(), pp.getP(), pp.getQ(), ID,
 				pp.getHash());
+		 return Q_ID;
 	}
 
 	/**
@@ -158,9 +146,10 @@ public class BFCryptoSystem {
 	 */
 	public Point extraction(String ID, PublicParameter pp)
 			throws NoSuchAlgorithmException {
-		Q_ID = sa.HashToPoint(pp.ec, pp.getP_int(), pp.getQ_int(), ID,
+		Point Q_ID = SupportingAlgorithms.HashToPoint(pp.getSstate().getCurve2(), pp.getP(), pp.getQ(), ID,
 				pp.getHash());
-		return S_ID = pp.ec.multiply(Q_ID, s);
+		Point S_ID = pp.sstate.getCurve().multiply(Q_ID, secret);
+		return S_ID;
 	}
 
 	/**
@@ -178,39 +167,43 @@ public class BFCryptoSystem {
 	 */
 	public ArrayList encryption(String PT, String ID, PublicParameter pp)
 			throws NoSuchAlgorithmException {
-
+		MessageDigest messageDigest = MessageDigest.getInstance(pp.getHash());
 		int hashlen = messageDigest.getDigestLength();
-		Q_ID = sa.HashToPoint(pp.ec, pp.getP_int(), pp.getQ_int(), ID,
+		Point Q_ID = SupportingAlgorithms.HashToPoint(pp.getSstate().getCurve2(), pp.getP(), pp.getQ(), ID,
 				pp.getHash());
 
-		String rho = createRho(hashlen);
+		byte[] rho = createRho(hashlen);
 		messageDigest.update(PT.getBytes());
-		String t = new String(messageDigest.digest());
-		int l1 = sa.HashToRange(rho.concat(t), pp.getQ_int(), pp.getHash());
-		BigInt l = BigInt.valueOf(l1);
-		Point U = pp.ec.multiply(pp.getPoint(), l);
+		byte[] t = messageDigest.digest();
+		byte[] rho_t = new byte[rho.length + t.length];
+		System.arraycopy(rho, 0, rho_t, 0, rho.length);
+		System.arraycopy(t, 0, rho_t, rho.length, t.length);
+		BigInt l = SupportingAlgorithms.HashToRange(rho_t, pp.getQ(), pp.getHash());
+		Point U = pp.sstate.getCurve().multiply(pp.getPoint(), l);
 
-		BigInt P = pp.getP();
-		BigInt Q = pp.getQ();
-		TatePairing tatep = new TatePairing(pp.getEc(), P, Q);
-
-		// Need help with this, cannot cast from FieldElement to BigInt
+		//Hit a small brick wall with this part of the encryption implementation, the standards says 'Let theta 
+		//= Pairing(E, p, q, P_pub, Q_id), which is an element of
+	    // the extension field F_p^2 obtained using the modified Tate pairing
+	    //of Algorithm 4.5.1 (Pairing) So just wondering if what I'm doing here is correct
+		TatePairing tatep = new TatePairing(pp.sstate.getCurve2(), pp.getP(), pp.getQ());
 		Complex theta_fp = (Complex) tatep.compute(pp.getPublic_point(), Q_ID);
-		BigInt theta_bi = theta_fp.getReal();
+		BigInt theta = theta_fp.getReal();
 
-		int theta1 = theta_bi.intValue();
-
-		int theta_ = (int) Math.pow(theta1, l1);
-		String z = sa.Canonical(p, 0, theta_);
-		messageDigest.update(z.getBytes());
-		String w = new String(messageDigest.digest());
-
-		String V = sa.xorHex(w, rho);
-		byte[] temp2 = PT.getBytes();
-		String temp = sa.HashBytes(temp2.length, rho, pp.getHash());
-
-		String W = sa.xorHex(temp, PT);
-
+		BigInt theta_ = theta.pow(l.intValue());
+		
+		//Another question, I'm not exactly sure what I'm doing in the Canonical method, please see comments in that.
+		byte[] z = SupportingAlgorithms.Canonical(pp.getP(),0,theta_);
+		
+		messageDigest.update(z);
+		byte[] w = messageDigest.digest();
+		byte[] V = SupportingAlgorithms.xorTwoByteArrays(w,rho);
+		
+		byte[] pta = PT.getBytes();
+		int length_pta = pta.length;
+		
+		byte[] W = SupportingAlgorithms.HashBytes(length_pta,rho,pp.getHash());
+		
+		
 		ArrayList tuple = new ArrayList();
 		tuple.add(U);
 		tuple.add(V);
@@ -218,22 +211,16 @@ public class BFCryptoSystem {
 		return tuple;
 	}
 
-	public String createRho(int hashlen) {
+	public byte[] createRho(int hashlen) {
 		System.out.println(hashlen);
 		Random rand = new Random();
-		String rho = null;
-		StringBuilder sb = new StringBuilder();
-		int[] temp = new int[hashlen];
+		byte[] rho = null;
 		for (int i = 0; i < hashlen; i++) {
 			System.out.println(i);
-			temp[i] = rand.nextInt();
+			rho[i] = (byte) rand.nextInt();
 		}
-		for (int j = 0; j < hashlen; j++) {
-			System.out.println(j);
-
-			sb.append(temp[j]);
-		}
-		rho = sb.toString();
+		
+		
 		return rho;
 	}
 
@@ -252,33 +239,38 @@ public class BFCryptoSystem {
 	 */
 	public String decryption(Point S_ID, ArrayList triple, PublicParameter pp)
 			throws NoSuchAlgorithmException {
+		MessageDigest messageDigest = MessageDigest.getInstance(pp.getHash());
 		int hashlen = messageDigest.getDigestLength();
-		BigInt P = pp.getP();
-		BigInt Q = pp.getQ();
-		TatePairing tatep = new TatePairing(pp.getEc(), P, Q);
-		Point U = (Point) triple.get(0);
-
-		Complex theta_fp = (Complex) tatep.compute(U, S_ID);
-
-		BigInt theta_bi = theta_fp.getReal();
-
-		int theta = theta_bi.intValue();
-		String z = sa.Canonical(p, 0, theta);
-		messageDigest.update(z.getBytes());
-		String w = new String(messageDigest.digest());
-		String V = (String) triple.get(1);
-		String rho = sa.xorHex(w, V);
-		String W = (String) triple.get(2);
-		byte[] temp = W.getBytes();
 		
-		String m = sa.HashBytes(temp.length, rho, pp.getHash());
-		messageDigest.update(m.getBytes());
-		String t = new String(messageDigest.digest());
-		String rho_t = rho.concat(t);
-		int l_temp = sa.HashToRange(rho_t, q, pp.getHash());
-		BigInt l = BigInt.valueOf(l_temp);
-		if (U == pp.getEc().multiply(pp.getPoint(), l)) {
-			return m;
+		//Same question remains here with regards to pairing.
+		TatePairing tatep = new TatePairing(pp.sstate.getCurve2(), pp.getP(), pp.getQ());
+		Point U = (Point) triple.get(0);
+		Complex theta_fp = (Complex) tatep.compute(U, S_ID);
+		BigInt theta_ = theta_fp.getReal();
+
+		byte[] z = SupportingAlgorithms.Canonical(pp.getP(),0,theta_);
+		
+		byte[] w = messageDigest.digest(z);
+		byte[] V = (byte[]) triple.get(1);
+		byte[] rho = SupportingAlgorithms.xorTwoByteArrays(w, V);
+		
+		
+		byte[] W = (byte[]) triple.get(2);
+		int w_length = w.length;
+
+		byte[] m = SupportingAlgorithms.HashBytes(w_length,rho,pp.getHash());
+		byte[] t = messageDigest.digest(m);
+		
+		byte[] rho_t = new byte[rho.length + t.length];
+		System.arraycopy(rho, 0, rho_t, 0, rho.length);
+		System.arraycopy(t, 0, rho_t, rho.length, t.length);
+		
+		
+		
+		BigInt l = SupportingAlgorithms.HashToRange(rho_t, pp.getQ(), pp.getHash());
+		
+		if (U == pp.sstate.getCurve().multiply(pp.getPoint(), l)) {
+			return m.toString();
 		} else {
 			System.out.println("Invalid Cyphercheck");
 		}
@@ -286,36 +278,31 @@ public class BFCryptoSystem {
 		return null;
 	}
 
-	public Point getS_ID() {
-		return S_ID;
-	}
+	
 
 	/**
 	 * This method is used by the setup algorithm in order to determine some of
 	 * the public variables q and p
+	 * 
+	 * @param q2
+	 * @param q
+	 * @param n_p
+	 * @param rnd
+	 * @return
 	 */
-	public void determinevariables() {
-		Random rand = new Random();
-		q = rand.nextInt(2 ^ n_q);
-		boolean check1 = this.isPrime(q);
-		// checks whether q is prime or not.
-		// check if q is a multiple of 2
-		r = 2;
-		p = 12 * r * q - 1;
-		boolean check2 = this.isPrime(q);
-		if (check1 && check2 == true) {
-
+	public static BigInt determinevariables(BigInt r, BigInt q, int n_p,
+			Random rnd) {
+		r = new BigInt(n_p, rnd);
+		BigInt p = (BigInt.valueOf(12).multiply(r).multiply(q).min(BigInt
+				.valueOf(1)));
+		boolean prime = p.isProbablePrime(100);
+		if (prime = true) {
+			return p;
 		} else {
-			determinevariables();
-		}
-	}
+			determinevariables(r, q, n_p, rnd);
+			return null;
 
-	boolean isPrime(int n) {
-		for (int i = 2; i < n; i++) {
-			if (n % i == 0)
-				return false;
 		}
-		return true;
-	}
 
+	}
 }
