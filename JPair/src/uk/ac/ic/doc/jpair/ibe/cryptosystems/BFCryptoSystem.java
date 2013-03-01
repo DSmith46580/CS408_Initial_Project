@@ -52,7 +52,8 @@ public class BFCryptoSystem {
 	 *         and the corresponding Master Secret 's'
 	 * @throws NoSuchAlgorithmException
 	 */
-	static public PublicParameter BFSetup1(int n) throws NoSuchAlgorithmException {
+	static public PublicParameter BFSetup1(int n)
+			throws NoSuchAlgorithmException {
 
 		String hashfcn = "";
 		EllipticCurve E;
@@ -65,8 +66,8 @@ public class BFCryptoSystem {
 		BigInt p;
 
 		if (n == 1024) {
-			 n_p = 512;
-			 n_q = 160;
+			n_p = 512;
+			n_q = 160;
 			hashfcn = "SHA-1";
 		}
 
@@ -78,7 +79,8 @@ public class BFCryptoSystem {
 		// hashfcn = "SHA-224";
 		// }
 
-		// The Following are not implemented based on the curve used from the JPair Project
+		// The Following are not implemented based on the curve used from the
+		// JPair Project
 		// else if (n == 3072) {
 		// n_p = 1536;
 		// n_q = 256;
@@ -98,31 +100,32 @@ public class BFCryptoSystem {
 		// }
 
 		MessageDigest messageDigest = MessageDigest.getInstance(hashfcn);
-        Random rnd =new Random();
+		Random rnd = new Random();
 		TatePairing sstate = Predefined.ssTate();
 
-// This can be used if you are not implementing a predefined curve in order to determine the variables p and q;		
-//		do{
-//		q = new BigInt(n_p, 100, rnd);
-//		r = new BigInt(n_p, rnd );
-//		p = determinevariables(r, q, n_p, rnd);
-//		P_ = sstate.getCurve().randomPoint(rnd);
-//		P =  sstate.getCurve().multiply(P_, BigInt.valueOf(12).multiply(r));
-//		} while (P !=null);
-		
+		// This can be used if you are not implementing a predefined curve in
+		// order to determine the variables p and q;
+		// do{
+		// q = new BigInt(n_p, 100, rnd);
+		// r = new BigInt(n_p, rnd );
+		// p = determinevariables(r, q, n_p, rnd);
+		// P_ = sstate.getCurve().randomPoint(rnd);
+		// P = sstate.getCurve().multiply(P_, BigInt.valueOf(12).multiply(r));
+		// } while (P !=null);
+
 		q = sstate.getGroupOrder();
-		Fp fp_p =  (Fp) sstate.getCurve().getField();
+		Fp fp_p = (Fp) sstate.getCurve().getField();
 		p = fp_p.getP();
-		r = new BigInt(n_p, rnd );
+		r = new BigInt(n_p, rnd);
 		P_ = sstate.getCurve().randomPoint(rnd);
-		P =  sstate.getCurve().multiply(P_, BigInt.valueOf(12).multiply(r));
-		
-		do{
+		P = sstate.getCurve().multiply(P_, BigInt.valueOf(12).multiply(r));
+
+		do {
 			secret = new BigInt(q.bitLength(), rnd);
-		} while (secret.subtract(q).signum()==-1);
-		
+		} while (secret.subtract(q).signum() == -1);
+
 		Point P_Pub = sstate.getCurve().multiply(P, secret);
-		
+
 		return new PublicParameter(sstate, p, q, P, P_Pub, hashfcn);
 	}
 
@@ -140,9 +143,9 @@ public class BFCryptoSystem {
 	public Point derivation(String ID, PublicParameter pp)
 			throws NoSuchAlgorithmException {
 
-		 Point Q_ID = SupportingAlgorithms.HashToPoint(pp.getSstate().getCurve2(), pp.getP(), pp.getQ(), ID,
-				pp.getHash());
-		 return Q_ID;
+		Point Q_ID = SupportingAlgorithms.HashToPoint(pp.getSstate()
+				.getCurve2(), pp.getP(), pp.getQ(), ID, pp.getHash());
+		return Q_ID;
 	}
 
 	/**
@@ -188,30 +191,29 @@ public class BFCryptoSystem {
 		byte[] rho_t = new byte[rho.length + t.length];
 		System.arraycopy(rho, 0, rho_t, 0, rho.length);
 		System.arraycopy(t, 0, rho_t, rho.length, t.length);
-		BigInt l = SupportingAlgorithms.HashToRange(rho_t, pp.getQ(), pp.getHash());
+		BigInt l = SupportingAlgorithms.HashToRange(rho_t, pp.getQ(),
+				pp.getHash());
 		Point U = pp.sstate.getCurve().multiply(pp.getPoint(), l);
 
-	
-		Complex theta_fp = (Complex) pp.sstate.compute(pp.getPublic_point(), Q_ID);
-		
+		Complex theta_fp = (Complex) pp.sstate.compute(pp.getPublic_point(),
+				Q_ID);
 
 		Complex theta_ = theta_fp.pow(l);
-		
-		
-		byte[] z = SupportingAlgorithms.Canonical(pp.getP(),0,theta_);
-		
+
+		byte[] z = SupportingAlgorithms.Canonical(pp.getP(), 0, theta_);
+
 		messageDigest.update(z);
 		byte[] w = messageDigest.digest();
-		byte[] V = SupportingAlgorithms.xorTwoByteArrays(w,rho);
-		
+		byte[] V = SupportingAlgorithms.xorTwoByteArrays(w, rho);
+
 		byte[] pta = PT.getBytes();
 		int length_pta = pta.length;
-		
-		byte[] temp_W = SupportingAlgorithms.HashBytes(length_pta,rho,pp.getHash());
+
+		byte[] temp_W = SupportingAlgorithms.HashBytes(length_pta, rho,
+				pp.getHash());
 		byte[] temp_pt = PT.getBytes();
 		byte[] W = SupportingAlgorithms.xorTwoByteArrays(temp_W, temp_pt);
-		
-		
+
 		ArrayList tuple = new ArrayList();
 		tuple.add(U);
 		tuple.add(V);
@@ -223,7 +225,7 @@ public class BFCryptoSystem {
 		Random rand = new Random();
 		byte[] rho = new byte[hashlen];
 		rand.nextBytes(rho);
-		
+
 		return rho;
 	}
 
@@ -251,14 +253,16 @@ public class BFCryptoSystem {
 		byte[] V = (byte[]) triple.get(1);
 		byte[] rho = SupportingAlgorithms.xorTwoByteArrays(w, V);
 		byte[] W = (byte[]) triple.get(2);
-		byte[] temp_m = SupportingAlgorithms.HashBytes(w.length, rho, pp.getHash());
+		byte[] temp_m = SupportingAlgorithms.HashBytes(w.length, rho,
+				pp.getHash());
 		byte[] m = SupportingAlgorithms.xorTwoByteArrays(temp_m, W);
 		byte[] t = messageDigest.digest(m);
 		byte[] rho_t = new byte[rho.length + t.length];
 		System.arraycopy(rho, 0, rho_t, 0, rho.length);
 		System.arraycopy(t, 0, rho_t, rho.length, t.length);
-		BigInt l = SupportingAlgorithms.HashToRange(rho_t, pp.getQ(), pp.getHash());
-		
+		BigInt l = SupportingAlgorithms.HashToRange(rho_t, pp.getQ(),
+				pp.getHash());
+
 		if (U.equals(pp.sstate.getCurve().multiply(pp.getPoint(), l))) {
 			return m.toString();
 		} else {
@@ -267,8 +271,6 @@ public class BFCryptoSystem {
 		System.out.println(m.toString());
 		return null;
 	}
-
-	
 
 	/**
 	 * This method is used by the setup algorithm in order to determine some of
