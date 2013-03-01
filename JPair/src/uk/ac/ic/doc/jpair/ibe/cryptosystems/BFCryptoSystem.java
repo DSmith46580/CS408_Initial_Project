@@ -251,13 +251,14 @@ public class BFCryptoSystem {
 		byte[] V = (byte[]) triple.get(1);
 		byte[] rho = SupportingAlgorithms.xorTwoByteArrays(w, V);
 		byte[] W = (byte[]) triple.get(2);
-		byte[] m = SupportingAlgorithms.HashBytes(w.length, rho, pp.getHash());
+		byte[] temp_m = SupportingAlgorithms.HashBytes(w.length, rho, pp.getHash());
+		byte[] m = SupportingAlgorithms.xorTwoByteArrays(temp_m, W);
 		byte[] t = messageDigest.digest(m);
 		byte[] rho_t = new byte[rho.length + t.length];
 		System.arraycopy(rho, 0, rho_t, 0, rho.length);
 		System.arraycopy(t, 0, rho_t, rho.length, t.length);
 		BigInt l = SupportingAlgorithms.HashToRange(rho_t, pp.getQ(), pp.getHash());
-		Point test = pp.sstate.getCurve().multiply(pp.getPoint(), l);
+		
 		if (U.equals(pp.sstate.getCurve().multiply(pp.getPoint(), l))) {
 			return m.toString();
 		} else {
