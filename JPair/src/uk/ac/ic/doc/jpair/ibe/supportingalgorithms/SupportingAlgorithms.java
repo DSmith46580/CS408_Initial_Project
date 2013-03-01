@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import uk.ac.ic.doc.jpair.pairing.BigInt;
+import uk.ac.ic.doc.jpair.pairing.Complex;
 import uk.ac.ic.doc.jpair.pairing.EllipticCurve;
 import uk.ac.ic.doc.jpair.pairing.Point;
 
@@ -25,7 +26,12 @@ public class SupportingAlgorithms {
 			String hashfcn) throws NoSuchAlgorithmException {
 
 		BigInt y = HashToRange(id.getBytes(), p, hashfcn);
-		BigInt x = (y.pow(2).min(BigInt.valueOf(1))).pow((2 * p.intValue()- 1) / 3).mod(p);
+		
+		BigInt base = y.multiply(y).subtract(BigInt.ONE);
+		BigInt exp = p.add(p).subtract(BigInt.ONE);
+		exp = exp.divide(BigInt.valueOf(3));
+		BigInt x = base.modPow(exp, p);
+		
         Point Q_ = new Point(x, y);
         Point Q = e.multiply(Q_, (p.add(BigInt.valueOf(1).divide(p))));
         return Q;
@@ -46,10 +52,8 @@ public class SupportingAlgorithms {
 			t_i = new byte[h_0.length + id_.length];
 			System.arraycopy(h_0, 0, t_i, 0, h_0.length);
 			System.arraycopy(id_, 0, t_i, h_0.length, id_.length);
-			messageDigest.update(t_i);
-			h_0 = messageDigest.digest();
-			byte[] temp=messageDigest.digest();
-			a_i = new BigInt(h_0);
+			h_0 = messageDigest.digest(t_i);
+			a_i = new BigInt(1, h_0);
 			v_0 = BigInt.valueOf(256).pow(hashlen).multiply(v_0).add(a_i);
 
 		}
@@ -65,13 +69,14 @@ public class SupportingAlgorithms {
 			throws NoSuchAlgorithmException {
 		MessageDigest messageDigest = MessageDigest.getInstance(hash);
         int hashlen = messageDigest.getDigestLength();
-		
-        messageDigest.update(rho);
-        byte[] k = messageDigest.digest();
+		byte[] k = messageDigest.digest(rho);
         byte[] h_0 = new byte[hashlen];
         byte[] t_i;
         byte[] r_i = null;
         int l= (int) Math.ceil(b/hashlen);
+        if (l==0){
+        	l=1;
+        }
         
         for (int i=0; i<l; i++) {
         	h_0 = messageDigest.digest(h_0);
@@ -87,27 +92,28 @@ public class SupportingAlgorithms {
 
 	}
 
-	public static byte[] Canonical(BigInt p, int i, BigInt theta_) {
+	public static byte[] Canonical(BigInt p, int i, Complex theta_) {
 	
-		BigInt l = BigInt.valueOf((long) Math.ceil(p.bitLength()/8));
-		// 2. Let v = a + b * i, where i^2 = -1
-		//
-		// 3. Let a_(256^l) be the big-endian zero-padded fixed-length octet
-		// string representation of a in Z_p
-		//
-		// 4. Let b_(256^l) be the big-endian zero-padded fixed-length octet
-		// string representation of b in Z_p
-		//
-		// 5. Depending on the choice of ordering o:
-		//
-		// (a) If o = 0, then let s = a_(256^l) || b_(256^l), which is the
-		// concatenation of a_(256^l) followed by b_(256^l)
-		//
-		// (b) If o = 1, then let s = b_(256^l) || a_(256^l), which is the
-		// concatenation of b_(256^l) followed by a_(256^l)
-		//
-		// 6. Return s
-		return null;
+		byte[]s = new byte[(p.bitLength()/8)*2];
+		BigInt l = BigInt.valueOf((long) Math.ceil(Math.log(p.bitLength())/8));
+		BigInt a = theta_.getReal();
+		BigInt b = theta_.getImag();
+		byte[] a_array = new byte[p.bitLength()/8];
+		byte[] b_array = new byte[p.bitLength()/8];
+		a_array = a.toByteArray();
+		b_array = b.toByteArray();
+		if (i==0) {
+			s = new byte[a_array.length + b_array.length];
+			System.arraycopy(a_array, 0, s, 0, a_array.length);
+			System.arraycopy(b_array, 0, s, a_array.length, b_array.length);
+		}
+		if (i==1) {
+			s = new byte[b_array.length + a_array.length];
+			System.arraycopy(b_array, 0, s, 0, a_array.length);
+			System.arraycopy(a_array, 0, s, b_array.length, a_array.length);
+		}
+		
+		return s;
 	}
 
 	 
