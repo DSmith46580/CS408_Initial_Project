@@ -270,7 +270,7 @@ public class BFCryptoSystem {
 		// get W from triple
 		byte[] W = (byte[]) triple.get(2);
 		// m = HashBytes(length of W in bytes, rho, hashfcn) XOR m
-		byte[] temp_m = SupportingAlgorithms.HashBytes(w.length, rho,
+		byte[] temp_m = SupportingAlgorithms.HashBytes(W.length, rho,
 				pp.getHash());
 		byte[] m = SupportingAlgorithms.xorTwoByteArrays(temp_m, W);
 		// t = hashfcn(m)
@@ -285,11 +285,13 @@ public class BFCryptoSystem {
 
 		// Verify that U = [l]P
 		if (U.equals(pp.sstate.getCurve().multiply(pp.getPoint(), l))) {
-			return m.toString();
+			String message = new String(m);
+			System.out.println(message);
 		} else {
 			System.out.println("Invalid Cyphercheck");
 		}
-		System.out.println(m.toString());
+		String message = new String(m);
+		System.out.println(message);
 		return null;
 	}
 

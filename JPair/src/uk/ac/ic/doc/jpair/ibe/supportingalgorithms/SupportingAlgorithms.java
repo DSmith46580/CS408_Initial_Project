@@ -45,6 +45,7 @@ public class SupportingAlgorithms {
 
 	public static BigInt HashToRange(byte[] bs, BigInt p, String hashfcn)
 			throws NoSuchAlgorithmException {
+		
 		// Let hashlen be the number of octets comprising the output of
 		// hashfcn
 		messageDigest = MessageDigest.getInstance(hashfcn);
@@ -123,7 +124,7 @@ public class SupportingAlgorithms {
 		byte[] s = new byte[(p.bitLength() / 8) * 2];
 		//l = Ceiling(lg(p) / 8)
 		BigInt l = BigInt
-				.valueOf((long) Math.floor(Math.log(p.bitLength()) / 8));
+				.valueOf((long) Math.floor(Math.log(p.divide(BigInt.valueOf(8)).doubleValue())));
 		// Let a_(256^l) be the big-endian zero-padded fixed-length octet
 		// string representation of a in Z_p
 		// Let b_(256^l) be the big-endian zero-padded fixed-length octet
