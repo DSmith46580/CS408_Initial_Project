@@ -97,7 +97,7 @@ public class SupportingAlgorithms {
 		byte[] t_i;
 		byte[] r_i = null;
 		//l = Ceiling(b / hashlen)
-		int l = (int) Math.floor(b / hashlen);
+		int l = b / hashlen;
 		if (l == 0) {
 			l = 1;
 		}
