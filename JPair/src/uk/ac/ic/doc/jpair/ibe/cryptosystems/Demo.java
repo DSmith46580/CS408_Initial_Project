@@ -9,7 +9,7 @@ public class Demo {
 
 	public static void main(String[] args) throws NoSuchAlgorithmException {
 	String ID = "David Smith";
-	String message ="aaaaaaaaaaaaaaaaaaa Hello, how are you my name is David";
+	String message ="Hello, how are you ? My name is David";
 	BFCryptoSystem bf = new BFCryptoSystem();
 	PublicParameter pp =bf.BFSetup1(1024);
 	bf.derivation(ID, pp);

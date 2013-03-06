@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Random;
 
 import uk.ac.ic.doc.jpair.pairing.BigInt;
 import uk.ac.ic.doc.jpair.pairing.Complex;
@@ -113,8 +114,12 @@ public class SupportingAlgorithms {
 		//r = LeftmostOctets(b, r_1 || ... || r_l), i.e., r is formed as
 	    //the concatenation of the r_i, truncated to the desired number of
 	    //octets
-		byte[] r = Arrays.copyOf(r_i, b);
-
+		byte temp[] = new byte[b-hashlen];
+		Random rand = new Random();
+		rand.nextBytes(temp);
+        byte[] r = new byte[r_i.length + temp.length];
+		System.arraycopy(r_i, 0, r, 0, r_i.length);
+		System.arraycopy(temp, 0, r, r_i.length, temp.length);
 		return r;
 
 	}

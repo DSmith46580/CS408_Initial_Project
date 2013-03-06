@@ -190,8 +190,7 @@ public class BFCryptoSystem {
 		// Select a random hashlen-bit vector rho
 		byte[] rho = createRho(hashlen);
 		// Let t = hashfcn(pt)
-		messageDigest.update(PT.getBytes());
-		byte[] t = messageDigest.digest();
+		byte[] t = messageDigest.digest(PT.getBytes());
 		// l = HashToRange(rho || t, q, hashfcn)
 		// rho || t is the concatination of rho and t
 		byte[] rho_t = new byte[rho.length + t.length];
@@ -209,17 +208,15 @@ public class BFCryptoSystem {
 		// z = Canonical(p, 0, theta)
 		byte[] z = SupportingAlgorithms.Canonical(pp.getP(), 0, theta);
 		// w = hashfcn(z)
-		messageDigest.update(z);
-		byte[] w = messageDigest.digest();
+		byte[] w = messageDigest.digest(z);
 		// V = w XOR rho
 		byte[] V = SupportingAlgorithms.xorTwoByteArrays(w, rho);
 		// W = HashBytes(length of pt in bytes, rho, hashfcn) XOR m
-		byte[] pta = PT.getBytes();
-		int length_pta = pta.length;
-		byte[] temp_W = SupportingAlgorithms.HashBytes(length_pta, rho,
+		byte[] pt = PT.getBytes();
+		int length_pt = pt.length;
+		byte[] temp_W = SupportingAlgorithms.HashBytes(length_pt, rho,
 				pp.getHash());
-		byte[] temp_pt = PT.getBytes();
-		byte[] W = SupportingAlgorithms.xorTwoByteArrays(temp_W, temp_pt);
+		byte[] W = SupportingAlgorithms.xorTwoByteArrays(pt, temp_W);
 		// Create an arraylist and add U,V and W and return it.
 		ArrayList tuple = new ArrayList();
 		tuple.add(U);
@@ -269,7 +266,7 @@ public class BFCryptoSystem {
 		byte[] rho = SupportingAlgorithms.xorTwoByteArrays(w, V);
 		// get W from triple
 		byte[] W = (byte[]) triple.get(2);
-		// m = HashBytes(length of W in bytes, rho, hashfcn) XOR m
+		// m = HashBytes(length of W in bytes, rho, hashfcn) XOR W
 		byte[] temp_m = SupportingAlgorithms.HashBytes(W.length, rho,
 				pp.getHash());
 		byte[] m = SupportingAlgorithms.xorTwoByteArrays(temp_m, W);
