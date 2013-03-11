@@ -115,16 +115,19 @@ public class BFCryptoSystem {
 
 		q = sstate.getGroupOrder();
 		Fp fp_p = (Fp) sstate.getCurve().getField();
-		p = fp_p.getP();
+		p=fp_p.getP();
+
 		r = new BigInt(n_p, rnd);
-		P_ = sstate.getCurve().randomPoint(rnd);
-		P = sstate.getCurve().multiply(P_, BigInt.valueOf(12).multiply(r));
+		//P_ = sstate.getCurve2().randomPoint(rnd);
+		//P = sstate.getCurve2().multiply(P_, BigInt.valueOf(12).multiply(r));
+		P=sstate.RandomPointInG2(rnd);
 
 		do {
 			secret = new BigInt(q.bitLength(), rnd);
 		} while (secret.subtract(q).signum() == -1);
 
-		Point P_Pub = sstate.getCurve().multiply(P, secret);
+		Point P_Pub = sstate.getCurve2().multiply(P, secret);
+		System.out.println("secret: "+ secret.toString(16));
 
 		return new PublicParameter(sstate, p, q, P, P_Pub, hashfcn);
 	}
@@ -145,6 +148,11 @@ public class BFCryptoSystem {
 
 		Point Q_ID = SupportingAlgorithms.HashToPoint(pp.getSstate()
 				.getCurve(), pp.getP(), pp.getQ(), ID, pp.getHash());
+		if(pp.getSstate().getCurve().isOnCurve(Q_ID)){
+			System.out.println("Q_ID is correct");
+		}else{
+			System.out.println("Q_ID is not correct");
+		}
 		return Q_ID;
 	}
 
@@ -163,6 +171,12 @@ public class BFCryptoSystem {
 			throws NoSuchAlgorithmException {
 		Point Q_ID = derivation(ID, pp);
 		Point S_ID = pp.sstate.getCurve().multiply(Q_ID, secret);
+		System.out.println("secret: "+ secret.toString(16));
+		
+		Complex a= (Complex) pp.sstate.compute(Q_ID, pp.getPublic_point());
+		System.out.println(a.toString(16));
+		Complex b= (Complex) pp.sstate.compute(S_ID, pp.getPoint());
+		System.out.println(b.toString(16));
 		return S_ID;
 	}
 
@@ -187,36 +201,53 @@ public class BFCryptoSystem {
 		int hashlen = messageDigest.getDigestLength();
 		// Q_id = derivation
 		Point Q_ID = derivation(ID, pp);
+		System.out.println("Enc Q_ID: "+Q_ID.toString(16));
 		// Select a random hashlen-bit vector rho
 		byte[] rho = createRho(hashlen);
+		System.out.println("Enc rho: "+new BigInt(1,rho).toString(16));
 		// Let t = hashfcn(pt)
 		byte[] t = messageDigest.digest(PT.getBytes());
+		System.out.println("Enc t: "+new BigInt(1,t).toString(16));
 		// l = HashToRange(rho || t, q, hashfcn)
 		// rho || t is the concatination of rho and t
 		byte[] rho_t = new byte[rho.length + t.length];
+
 		System.arraycopy(rho, 0, rho_t, 0, rho.length);
 		System.arraycopy(t, 0, rho_t, rho.length, t.length);
+		System.out.println("Enc rho_t: "+new BigInt(1,rho_t).toString(16));
 		BigInt l = SupportingAlgorithms.HashToRange(rho_t, pp.getQ(),
 				pp.getHash());
+		
+		System.out.println("Enc l: "+l.toString(16));
 		// U = [l]P
-		Point U = pp.sstate.getCurve().multiply(pp.getPoint(), l);
+		Point U = pp.sstate.getCurve2().multiply(pp.getPoint(), l);
+		
+		System.out.println("Enc U: "+U.toString(16));
 		// theta = Pairing(E, P_pub, Q_id)
-		Complex theta_fp = (Complex) pp.sstate.compute(pp.getPublic_point(),
-				Q_ID);
+		Complex theta_fp = (Complex) pp.sstate.compute(Q_ID,pp.getPublic_point());
+		System.out.println("Enc theta_fp: "+theta_fp.toString(16));
 		// theta = theta_fp^l
 		Complex theta = theta_fp.pow(l);
+		System.out.println("Enc theta: "+theta.toString(16));
 		// z = Canonical(p, 0, theta)
 		byte[] z = SupportingAlgorithms.Canonical(pp.getP(), 0, theta);
+		System.out.println("Enc z: "+new BigInt(1,z).toString(16));
 		// w = hashfcn(z)
 		byte[] w = messageDigest.digest(z);
+		System.out.println("Enc w: "+new BigInt(1,w).toString(16));
 		// V = w XOR rho
 		byte[] V = SupportingAlgorithms.xorTwoByteArrays(w, rho);
+		System.out.println("Enc V: "+new BigInt(1,V).toString(16));
 		// W = HashBytes(length of pt in bytes, rho, hashfcn) XOR m
 		byte[] pt = PT.getBytes();
+		
+		System.out.println("Enc m: "+new BigInt(1,pt).toString(16));
+		
 		int length_pt = pt.length;
 		byte[] temp_W = SupportingAlgorithms.HashBytes(length_pt, rho,
 				pp.getHash());
 		byte[] W = SupportingAlgorithms.xorTwoByteArrays(pt, temp_W);
+		System.out.println("Enc W: "+new BigInt(1,W).toString(16));
 		// Create an arraylist and add U,V and W and return it.
 		ArrayList tuple = new ArrayList();
 		tuple.add(U);
@@ -250,38 +281,65 @@ public class BFCryptoSystem {
 			throws NoSuchAlgorithmException {
 		// Let hashlen be the length of the output of the cryptographic hash
 		// function hashfcn from the public parameters.
+		System.out.println("Dec Q_ID: "+S_ID.toString(16));
+		
 		MessageDigest messageDigest = MessageDigest.getInstance(pp.getHash());
-		int hashlen = messageDigest.getDigestLength();
+		int hashlen = messageDigest.getDigestLength();  
 		// take U from triple
 		Point U = (Point) triple.get(0);
+		System.out.println("Dec U: "+U.toString(16));
+		
 		// theta = Pairing(E, U, S_id)
 		Complex theta = (Complex) pp.sstate.compute(S_ID, U);
+		System.out.println("Dec theta: "+theta.toString(16));
 		// z = Canonical(p, 0, theta)
 		byte[] z = SupportingAlgorithms.Canonical(pp.getP(), 0, theta);
+		
+		System.out.println("Dec z: "+new BigInt(1,z).toString(16));
 		// w = hashfcn(z)
 		byte[] w = messageDigest.digest(z);
+		
+		System.out.println("Dec w: "+new BigInt(1,w).toString(16));
+		
 		// get V from triple
 		byte[] V = (byte[]) triple.get(1);
+		
+		System.out.println("Dec V: "+new BigInt(1,V).toString(16));
 		// rho = w XOR V
 		byte[] rho = SupportingAlgorithms.xorTwoByteArrays(w, V);
+		
+		System.out.println("Dec rho: "+new BigInt(1,rho).toString(16));
 		// get W from triple
 		byte[] W = (byte[]) triple.get(2);
+		
+		System.out.println("Dec W: "+new BigInt(1,W).toString(16));
+		
 		// m = HashBytes(length of W in bytes, rho, hashfcn) XOR W
 		byte[] temp_m = SupportingAlgorithms.HashBytes(W.length, rho,
 				pp.getHash());
 		byte[] m = SupportingAlgorithms.xorTwoByteArrays(temp_m, W);
+		
+		System.out.println("Dec m: "+new BigInt(1,m).toString(16));
 		// t = hashfcn(m)
 		byte[] t = messageDigest.digest(m);
+		
+		System.out.println("Dec t: "+new BigInt(1,t).toString(16));
 		// l = HashToRange(rho || t, q, hashfcn)
 		// Concatenation of rho and t
 		byte[] rho_t = new byte[rho.length + t.length];
+		
 		System.arraycopy(rho, 0, rho_t, 0, rho.length);
 		System.arraycopy(t, 0, rho_t, rho.length, t.length);
+		
+		System.out.println("Dec rho_z: "+new BigInt(1,rho_t).toString(16));
+		
 		BigInt l = SupportingAlgorithms.HashToRange(rho_t, pp.getQ(),
 				pp.getHash());
+		
+		System.out.println("Dec l: "+l.toString(16));
 
 		// Verify that U = [l]P
-		if (U.equals(pp.sstate.getCurve().multiply(pp.getPoint(), l))) {
+		if (U.equals(pp.sstate.getCurve2().multiply(pp.getPoint(), l))) {
 			String message = new String(m);
 			System.out.println(message);
 		} else {

@@ -12,7 +12,7 @@ public class Demo {
 	String message ="Hello, how are you ? My name is David";
 	BFCryptoSystem bf = new BFCryptoSystem();
 	PublicParameter pp =bf.BFSetup1(1024);
-	bf.derivation(ID, pp);
+	//bf.derivation(ID, pp);
 	Point S_ID = bf.extraction(ID, pp);
 	ArrayList triple= bf.encryption(message, ID, pp);
 	bf.decryption(S_ID, triple, pp);

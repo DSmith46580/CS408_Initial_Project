@@ -25,23 +25,48 @@ public class SupportingAlgorithms {
 
 	static public Point HashToPoint(EllipticCurve e, BigInt p, BigInt q,
 			String id, String hashfcn) throws NoSuchAlgorithmException {
-		// y = HashToRange(id, p, hashfcn)
-		BigInt y = HashToRange(id.getBytes(), p, hashfcn);
-		// x = (y^2 - 1)^((2 * p - 1) / 3) mod p
-		// (y^2 - 1)
-		BigInt base = y.multiply(y).subtract(BigInt.ONE);
-		// ((2 * p - 1) / 3)
-		BigInt exp = p.add(p).subtract(BigInt.ONE);
-		exp = exp.divide(BigInt.valueOf(3));
-		// x = (y^2 - 1)^((2 * p - 1) / 3) mod p
-		BigInt x = base.modPow(exp, p);
-		// Q' = (x, y)
-		Point Q_ = new Point(x, y);
-		// Q = [(p + 1) / q ]Q'
+		
+		BigInt x= HashToRange(id.getBytes(), p, hashfcn);
+		
+		Point P =e.getPoint(x);
+		
+		while(P==null){
+			x=x.add(BigInt.ONE);
+			P=e.getPoint(x);
+		}
 		BigInt temp = p.add(BigInt.ONE);
 		temp = temp.divide(q);
-		Point Q = e.multiply(Q_, temp);
-		return Q;
+
+		P = e.multiply(P, temp);
+//		
+		return P;
+		
+//		// y = HashToRange(id, p, hashfcn)
+//		BigInt y = HashToRange(id.getBytes(), p, hashfcn);
+//		// x = (y^2 - 1)^((2 * p - 1) / 3) mod p
+//		// (y^2 - 1)
+//		BigInt base = ((y.multiply(y)).subtract(BigInt.ONE)).mod(p);
+//		// ((2 * p - 1) / 3)
+//		BigInt exp = p.add(p).subtract(BigInt.ONE);
+//		//exp = exp.divide(BigInt.valueOf(3));
+//		exp=p.divide(BigInt.valueOf(3));
+//		//exp=inverse;
+//		// x = (y^2 - 1)^((2 * p - 1) / 3) mod p
+//		BigInt x = base.modPow(exp, p);
+//		// Q' = (x, y)
+//		Point Q_ = new Point(x, y);
+		
+//		if(e.isOnCurve(Q_)){
+//			System.out.println("Q_ is correct");
+//		}else{
+//			System.out.println("Q_ is not correct");
+//		}
+//		// Q = [(p + 1) / q ]Q'
+//		BigInt temp = p.add(BigInt.ONE);
+//		temp = temp.divide(q);
+//
+//		Point Q = e.multiply(Q_, temp);
+//		return Q;
 	}
 
 	public static BigInt HashToRange(byte[] bs, BigInt p, String hashfcn)
@@ -97,7 +122,10 @@ public class SupportingAlgorithms {
 		byte[] t_i;
 		byte[] r_i = null;
 		//l = Ceiling(b / hashlen)
-		int l = b / hashlen;
+		int l = (int) Math.ceil((double)b / hashlen);
+		
+		byte[] out =new byte[b];
+		int start= 0;
 		if (l == 0) {
 			l = 1;
 		}
@@ -110,17 +138,15 @@ public class SupportingAlgorithms {
 			System.arraycopy(h_0, 0, t_i, 0, h_0.length);
 			System.arraycopy(k, 0, t_i, h_0.length, k.length);
 			r_i = messageDigest.digest(t_i);
+			if(start+hashlen<b){
+				System.arraycopy(r_i, 0, out, start, hashlen);
+			}else{
+				System.arraycopy(r_i, 0, out, start, b-start);
+			}
+			start+=hashlen;
 		}
-		//r = LeftmostOctets(b, r_1 || ... || r_l), i.e., r is formed as
-	    //the concatenation of the r_i, truncated to the desired number of
-	    //octets
-		byte temp[] = new byte[b-hashlen];
-		Random rand = new Random();
-		rand.nextBytes(temp);
-        byte[] r = new byte[r_i.length + temp.length];
-		System.arraycopy(r_i, 0, r, 0, r_i.length);
-		System.arraycopy(temp, 0, r, r_i.length, temp.length);
-		return r;
+
+		return out;
 
 	}
 
