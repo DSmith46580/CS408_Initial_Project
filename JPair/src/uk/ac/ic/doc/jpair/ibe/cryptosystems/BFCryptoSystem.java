@@ -34,7 +34,7 @@ import uk.ac.ic.doc.jpair.pairing.TatePairing;
  * primitives developed by Changyu Dong.
  * 
  * @author David Smith
- * @version 0.1
+ * @version 1.0
  */
 
 public class BFCryptoSystem {
@@ -337,17 +337,16 @@ public class BFCryptoSystem {
 				pp.getHash());
 		
 		System.out.println("Dec l: "+l.toString(16));
-
+		String message = "";
 		// Verify that U = [l]P
 		if (U.equals(pp.sstate.getCurve2().multiply(pp.getPoint(), l))) {
-			String message = new String(m);
+			message = new String(m);
 			System.out.println(message);
 		} else {
 			System.out.println("Invalid Cyphercheck");
 		}
-		String message = new String(m);
-		System.out.println(message);
-		return null;
+		
+		return message;
 	}
 
 	/**
