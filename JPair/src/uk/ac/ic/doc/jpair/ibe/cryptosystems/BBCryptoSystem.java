@@ -156,17 +156,76 @@ public class BBCryptoSystem {
 	 * 
 	 * 
 	 */
-	public Point derivation(String ID, PublicParameter pp)
+	public static BigInt derivation(String ID, PublicParameter pp)
 			throws NoSuchAlgorithmException {
 
-		Point H_ID = SupportingAlgorithms.HashToPoint(pp.getSstate()
-				.getCurve(), pp.getP(), pp.getQ(), ID, pp.getHash());
-		if(pp.getSstate().getCurve().isOnCurve(H_ID)){
-			System.out.println("H_ID is correct");
-		}else{
-			System.out.println("H_ID is not correct");
-		}
+		BigInt H_ID = SupportingAlgorithms.HashToRange(ID.getBytes(),
+				pp.getqBB(), pp.getHashfcnBB());
 		return H_ID;
+	}
+
+	/**
+	 * The Extraction algorithm. This method calls upon one of the supporting
+	 * algorithms
+	 * 
+	 * @param ID
+	 *            - Identity String ID
+	 * @return S_ID - Point in order q in E(F_p)
+	 * @throws NoSuchAlgorithmException
+	 * 
+	 * 
+	 */
+	public static ArrayList<Point> extraction(String ID, PublicParameter pp)
+			throws NoSuchAlgorithmException {
+		Random rnd = new Random();
+		BigInt r;
+		do {
+			r = new BigInt(pp.getqBB().bitLength(), rnd);
+		} while (r.subtract(pp.getqBB()).signum() == -1);
+		BigInt H_ID = derivation(ID, pp);
+		BigInt y_temp1 = secret.get(0).multiply(secret.get(1)).add(r);
+		BigInt y_temp2 = secret.get(0).multiply(H_ID).add(secret.get(2));
+		BigInt y = y_temp1.multiply(y_temp2);
+		Point D_0 = pp.sstateBB.getCurve().multiply(pp.getPointBB(), y);
+		Point D_1 = pp.sstateBB.getCurve().multiply(pp.getPointBB(), r);
+		ArrayList<Point> privateKey = new ArrayList<Point>();
+		privateKey.add(D_0);
+		privateKey.add(D_1);
+		return privateKey;
+	}
+
+	/**
+	 * The Encryption algorithm. This method calls the supporting algorithms
+	 * 
+	 * @param ID
+	 *            - Identity String id
+	 * @param PT
+	 *            - Plaintext String m of size |m| octets
+	 * @return
+	 * @return Ciphertext tuple (U,V,W)
+	 * @throws NoSuchAlgorithmException
+	 * 
+	 * 
+	 */
+	public ArrayList encryption(String PT, String ID, PublicParameter pp)
+			throws NoSuchAlgorithmException {
+		Random rnd = new Random();
+		BigInt s;
+		do {
+			s = new BigInt(pp.getqBB().bitLength(), rnd);
+		} while (s.subtract(pp.getqBB()).signum() == -1);
+
+		Complex w = pp.getVbb().pow(s);
+		
+		Point C_0 = pp.sstateBB.getCurve().multiply(pp.PointBB, s);
+		
+		BigInt h_id = SupportingAlgorithms.HashToRange(ID.getBytes(), pp.qBB, pp.hashfcnBB);
+		BigInt y = s.multiply(h_id);
+        Point C_1_temp = pp.sstateBB.getCurve().multiply(pp.P_1, y); 
+        Point C_1_temp2 = pp.sstateBB.getCurve().multiply(pp.P_3, s);
+        
+		return null;
+
 	}
 
 	
