@@ -221,8 +221,9 @@ public class BBCryptoSystem {
 		
 		BigInt h_id = SupportingAlgorithms.HashToRange(ID.getBytes(), pp.qBB, pp.hashfcnBB);
 		BigInt y = s.multiply(h_id);
-        Point C_1_temp = pp.sstateBB.getCurve().multiply(pp.P_1, y); 
-        Point C_1_temp2 = pp.sstateBB.getCurve().multiply(pp.P_3, s);
+                Point C_1_temp = pp.sstateBB.getCurve().multiply(pp.P_1, y); 
+                Point C_1_temp2 = pp.sstateBB.getCurve().multiply(pp.P_3, s);
+                Point C_1 = pp.sstate.getCurve().add(C_1_temp, C_1_temp2);
         
 		return null;
 
