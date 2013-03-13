@@ -224,6 +224,7 @@ public class BBCryptoSystem {
                 Point C_1_temp = pp.sstateBB.getCurve().multiply(pp.P_1, y); 
                 Point C_1_temp2 = pp.sstateBB.getCurve().multiply(pp.P_3, s);
                 Point C_1 = pp.sstate.getCurve().add(C_1_temp, C_1_temp2);
+                byte[] psi = SupportingAlgorithms.Canonical(pp.pBB, 1, w);
         
 		return null;
 
