@@ -10,11 +10,9 @@ public class Demo {
 	public static void main(String[] args) throws NoSuchAlgorithmException {
 	String ID = "David Smith";
 	String message ="Hello, how are you ? My name is David";
-	BFCryptoSystem bf = new BFCryptoSystem();
-	PublicParameter pp =bf.BFSetup1(1024);
-	//bf.derivation(ID, pp);
-	Point S_ID = bf.extraction(ID, pp);
-	ArrayList triple= bf.encryption(message, ID, pp);
-	bf.decryption(S_ID, triple, pp);
+	PublicParameter pp =BFCryptoSystem.BFSetup1(1024);
+	Point S_ID = BFCryptoSystem.extraction(ID, pp);
+	ArrayList triple= BFCryptoSystem.encryption(message, ID, pp);
+	BFCryptoSystem.decryption(S_ID, triple, pp);
 	}
 }

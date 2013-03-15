@@ -143,7 +143,7 @@ public class BFCryptoSystem {
 	 * 
 	 * 
 	 */
-	public Point derivation(String ID, PublicParameter pp)
+	public static Point derivation(String ID, PublicParameter pp)
 			throws NoSuchAlgorithmException {
 
 		Point Q_ID = SupportingAlgorithms.HashToPoint(pp.getSstate()
@@ -167,7 +167,7 @@ public class BFCryptoSystem {
 	 * 
 	 * 
 	 */
-	public Point extraction(String ID, PublicParameter pp)
+	public static Point extraction(String ID, PublicParameter pp)
 			throws NoSuchAlgorithmException {
 		Point Q_ID = derivation(ID, pp);
 		Point S_ID = pp.sstate.getCurve().multiply(Q_ID, secret);
@@ -193,7 +193,7 @@ public class BFCryptoSystem {
 	 * 
 	 * 
 	 */
-	public ArrayList encryption(String PT, String ID, PublicParameter pp)
+	public static ArrayList encryption(String PT, String ID, PublicParameter pp)
 			throws NoSuchAlgorithmException {
 		// Let hashlen be the length of the output of the cryptographic hash
 		// function hashfcn from the public parameters.
@@ -256,7 +256,7 @@ public class BFCryptoSystem {
 		return tuple;
 	}
 
-	public byte[] createRho(int hashlen) {
+	public static byte[] createRho(int hashlen) {
 		Random rand = new Random();
 		byte[] rho = new byte[hashlen];
 		rand.nextBytes(rho);
@@ -277,7 +277,7 @@ public class BFCryptoSystem {
 	 * 
 	 * 
 	 */
-	public String decryption(Point S_ID, ArrayList triple, PublicParameter pp)
+	public static String decryption(Point S_ID, ArrayList triple, PublicParameter pp)
 			throws NoSuchAlgorithmException {
 		// Let hashlen be the length of the output of the cryptographic hash
 		// function hashfcn from the public parameters.
