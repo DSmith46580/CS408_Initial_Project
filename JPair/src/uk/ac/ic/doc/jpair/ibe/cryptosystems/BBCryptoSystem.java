@@ -187,8 +187,8 @@ public class BBCryptoSystem {
 		BigInt y_temp1 = secret.get(0).multiply(secret.get(1)).add(r);
 		BigInt y_temp2 = secret.get(0).multiply(H_ID).add(secret.get(2));
 		BigInt y = y_temp1.multiply(y_temp2);
-		Point D_0 = pp.sstateBB.getCurve().multiply(pp.getPointBB(), y);
-		Point D_1 = pp.sstateBB.getCurve().multiply(pp.getPointBB(), r);
+		Point D_0 = pp.sstateBB.getCurve2().multiply(pp.getPointBB(), y);
+		Point D_1 = pp.sstateBB.getCurve2().multiply(pp.getPointBB(), r);
 		ArrayList<Point> privateKey = new ArrayList<Point>();
 		privateKey.add(D_0);
 		privateKey.add(D_1);
@@ -208,11 +208,12 @@ public class BBCryptoSystem {
 	 * 
 	 * 
 	 */
-	public ArrayList encryption(String PT, String ID, PublicParameter pp)
+	public static  ArrayList encryption(String PT, String ID, PublicParameter pp)
 			throws NoSuchAlgorithmException {
 		MessageDigest messageDigest = MessageDigest.getInstance(pp.hashfcnBB);
 		Random rnd = new Random();
 		BigInt s;
+		
 		do {
 			s = new BigInt(pp.getqBB().bitLength(), rnd);
 		} while (s.subtract(pp.getqBB()).signum() == -1);
@@ -220,33 +221,202 @@ public class BBCryptoSystem {
 		Complex w = pp.getVbb().pow(s);
 
 		Point C_0 = pp.sstateBB.getCurve().multiply(pp.PointBB, s);
+		System.out.println("Enc C_0: "+C_0.toString(16));
+
 
 		BigInt h_id = SupportingAlgorithms.HashToRange(ID.getBytes(), pp.qBB,
 				pp.hashfcnBB);
+		System.out.println("Enc h_id: "+h_id.toString(16));
+		
 		BigInt y = s.multiply(h_id);
+		System.out.println("Enc y: "+y.toString(16));
+		
 		Point C_1_temp = pp.sstateBB.getCurve().multiply(pp.P_1, y);
 		Point C_1_temp2 = pp.sstateBB.getCurve().multiply(pp.P_3, s);
-		Point C_1 = pp.sstate.getCurve().add(C_1_temp, C_1_temp2);
+		Point C_1 = pp.sstateBB.getCurve().add(C_1_temp, C_1_temp2);
+		System.out.println("Enc C_1: "+C_1.toString(16));
+		
 		byte[] psi = SupportingAlgorithms.Canonical(pp.pBB, 1, w);
+		System.out.println("Enc psi: "+new BigInt(1,psi).toString(16));
+		
 		int l = (int) Math.ceil(pp.pBB.bitLength() / 8);
+		
 		byte[] x_0 = C_0.getX().toByteArray();
+		System.out.println("Enc x_0: "+new BigInt(1,x_0).toString(16));
 		byte[] y_0 = C_0.getY().toByteArray();
+		System.out.println("Enc y_0: "+new BigInt(1,y_0).toString(16));
 		byte[] x_1 = C_1.getX().toByteArray();
+		System.out.println("Enc x_1: "+new BigInt(1,x_1).toString(16));
 		byte[] y_1 = C_1.getY().toByteArray();
+		System.out.println("Enc y_1: "+new BigInt(1,y_1).toString(16));
+		
 		byte[] zeta = messageDigest.digest(psi);
+		System.out.println("Enc zeta: "+new BigInt(1,zeta).toString(16));
+		
 		byte[] xi = new byte[zeta.length + psi.length];
 		System.arraycopy(zeta, 0, xi, 0, zeta.length);
 		System.arraycopy(psi, 0, xi, zeta.length, psi.length);
+		System.out.println("Enc xi: "+new BigInt(1,xi).toString(16));
+
+		byte[] h_ = new byte[xi.length + zeta.length];
+		System.arraycopy(xi, 0, h_, 0, xi.length);
+		System.arraycopy(zeta, 0, h_, xi.length, zeta.length);
+		System.out.println("Enc h_: "+new BigInt(1,h_).toString(16));
+
+		byte[] pt = PT.getBytes();
+		byte[] ybyte = SupportingAlgorithms.HashBytes(pt.length, h_,
+				pp.hashfcnBB);
+		System.out.println("Enc ybyte: "+new BigInt(1,ybyte).toString(16));
+
+		byte[] sigma = createByteArray(y_1, x_1, y_0, x_0, ybyte, psi);
+		System.out.println("Enc sigma: "+new BigInt(1,sigma).toString(16));
+		
+		byte[] eta = messageDigest.digest(sigma);
+		System.out.println("Enc eta: "+new BigInt(1,eta).toString(16));
+		
+		byte[] temp_mu = new byte[eta.length + sigma.length];
+		System.arraycopy(eta, 0, temp_mu, 0, eta.length);
+		System.arraycopy(sigma, 0, temp_mu, eta.length, sigma.length);
+		byte[] mu = messageDigest.digest(temp_mu);
+		System.out.println("Enc mu: "+new BigInt(1,mu).toString(16));
+		
+		byte[] h__ = new byte[mu.length + eta.length];
+		System.arraycopy(mu, 0, h__, 0, mu.length);
+		System.arraycopy(eta, 0, h__, mu.length, eta.length);
+		System.out.println("Enc h__: "+new BigInt(1,h__).toString(16));
+		
+		BigInt rho = SupportingAlgorithms.HashToRange(h__, pp.qBB, pp.getHashfcnBB());
+		System.out.println("Enc rho: "+rho.toString(16));
+		
+		BigInt u_temp = s.add(rho);
+		BigInt u = u_temp.mod(pp.qBB);
+		System.out.println("Enc u: "+u.toString(16));
+		
+		ArrayList quad = new ArrayList();
+		quad.add(u);
+		quad.add(C_0);
+		quad.add(C_1);
+		quad.add(ybyte);
+		
+	
+		return quad;
+
+	}
+
+	private static byte[] createByteArray(byte[] y_1, byte[] x_1, byte[] y_0,
+			byte[] x_0, byte[] ybyte, byte[] psi) {
+		int length = y_1.length + x_1.length + y_0.length + x_0.length
+				+ ybyte.length + psi.length;
+		byte[] array = new byte[length];
+		System.arraycopy(y_1, 0, array, 0, y_1.length);
+		int temp = 0+y_1.length;
+		System.arraycopy(x_1, 0, array, (temp), x_1.length);
+		temp = temp+x_1.length;
+		System.arraycopy(y_0, 0, array, (temp), y_0.length);
+		temp = temp+y_0.length;
+		System.arraycopy(x_0, 0, array, (temp), x_0.length);
+		temp = temp+x_0.length;
+		System.arraycopy(ybyte, 0, array, (temp), ybyte.length);
+		temp = temp+ybyte.length;
+		System.arraycopy(psi, 0, array, (temp), psi.length);
+		
+		return array;
+	}
+	
+	public static String decryption(ArrayList quad, PublicParameter pp, ArrayList privatekey) throws NoSuchAlgorithmException {
+		MessageDigest messageDigest =  MessageDigest.getInstance(pp.hashfcnBB);
+		BigInt u = (BigInt) quad.get(0);
+		Point C_0 = (Point) quad.get(1);
+		Point C_1 = (Point) quad.get(2);
+		byte[] ybyte = (byte[]) quad.get(3);
+		
+		Point D_0 = (Point) privatekey.get(0);
+		Point D_1 = (Point) privatekey.get(1);
+		Complex c = (Complex) pp.sstateBB.compute(C_0, D_0);
+		Complex d = (Complex) pp.sstateBB.compute(C_1, D_1);
+		Complex w = c.divide(d);
+		
+		byte[] psi = SupportingAlgorithms.Canonical(pp.pBB, 1, w);
+		System.out.println("Dec psi: "+new BigInt(1,psi).toString(16));
+
+		
+		byte[] x_0 = C_0.getX().toByteArray();
+		System.out.println("dec x_0: "+new BigInt(1,x_0).toString(16));
+		byte[] y_0 = C_0.getY().toByteArray();
+		System.out.println("dec y_0: "+new BigInt(1,y_0).toString(16));
+		byte[] x_1 = C_1.getX().toByteArray();
+		System.out.println("dec x_1: "+new BigInt(1,x_1).toString(16));
+		byte[] y_1 = C_1.getY().toByteArray();
+		System.out.println("dec y_1: "+new BigInt(1,y_1).toString(16));
+		
+		byte[] zeta = messageDigest.digest(psi);
+		System.out.println("Dex zeta: "+new BigInt(1,zeta).toString(16));
+
+		
+		byte[] xi_temp = new byte[zeta.length + psi.length];
+		System.arraycopy(zeta, 0, xi_temp, 0, zeta.length);
+		System.arraycopy(psi, 0, xi_temp, zeta.length, psi.length);
+		byte[] xi = messageDigest.digest(xi_temp);
+		System.out.println("Dec xi: "+new BigInt(1,xi).toString(16));
+
 		
 		byte[] h_ = new byte[xi.length + zeta.length];
 		System.arraycopy(xi, 0, h_, 0, xi.length);
 		System.arraycopy(zeta, 0, h_, xi.length, zeta.length);
+		System.out.println("dec h_: "+new BigInt(1,h_).toString(16));
 		
-		byte[] pt = PT.getBytes();
-		byte[] ybyte = SupportingAlgorithms.HashBytes(pt.length, h_, pp.hashfcnBB);
 
+
+		
+		byte[] m = SupportingAlgorithms.HashBytes(ybyte.length, h_, pp.hashfcnBB);
+		
+		byte[] sigma = createByteArray(y_1, x_1, y_0, x_0, ybyte, psi);
+		System.out.println("dec "+new BigInt(1,sigma).toString(16));
+
+		
+		byte[] eta = messageDigest.digest(sigma);
+		System.out.println("dec eta: "+new BigInt(1,eta).toString(16));
+
+		
+		byte[] temp_mu = new byte[eta.length + sigma.length];
+		System.arraycopy(eta, 0, temp_mu, 0, eta.length);
+		System.arraycopy(sigma, 0, temp_mu, eta.length, sigma.length);
+		byte[] mu = messageDigest.digest(temp_mu);
+		System.out.println("dec mu: "+new BigInt(1,mu).toString(16));
+		
+		byte[] h__ = new byte[mu.length + eta.length];
+		System.arraycopy(mu, 0, h__, 0, mu.length);
+		System.arraycopy(eta, 0, h__, mu.length, eta.length);
+		System.out.println("Dec h__: "+new BigInt(1,h__).toString(16));
+
+		
+		BigInt rho = SupportingAlgorithms.HashToRange(h__, pp.getqBB(), pp.hashfcnBB);
+		System.out.println("Enc rho: "+rho.toString(16));
+		
+		BigInt s_temp = u.subtract(rho);
+		BigInt s = s_temp.mod(pp.getqBB());
+		
+		Boolean test1 = false;
+		Boolean test2 = false;
+		if ( w == pp.getVbb().pow(s)){
+			test1=true;
+		}
+		if(C_0 == pp.sstateBB.getCurve2().multiply(pp.getPointBB(), s)) {
+			test2=true;
+		}
+		
+		if(test1&&test2 == true) {
+			String message = new String(m);
+			System.out.println(m);
+		}
+		else {
+			System.out.println("Invalid Cyphercheck");
+		}
+		
+		String message = new String(m.toString());
+		System.out.println(m);
 		return null;
-
+		
 	}
 
 }

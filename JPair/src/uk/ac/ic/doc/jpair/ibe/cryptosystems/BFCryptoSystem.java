@@ -248,6 +248,8 @@ public class BFCryptoSystem {
 				pp.getHash());
 		byte[] W = SupportingAlgorithms.xorTwoByteArrays(pt, temp_W);
 		System.out.println("Enc W: "+new BigInt(1,W).toString(16));
+		String temp_Ws = new String(W);
+		System.out.println(temp_Ws);
 		// Create an arraylist and add U,V and W and return it.
 		ArrayList tuple = new ArrayList();
 		tuple.add(U);
