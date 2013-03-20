@@ -135,8 +135,11 @@ public class BBCryptoSystem {
 		} while (beta.subtract(q).signum() == -1);
 
 		P_1 = sstate.getCurve().multiply(P, alpha);
+		System.out.println("P_1 is on curve : " + sstate.getCurve().isOnCurve(P_1));
 		P_2 = sstate.getCurve2().multiply(P, beta);
-		P_3 = sstate.getCurve2().multiply(P, gamma);
+		System.out.println("P_2 is on curve : " + sstate.getCurve2().isOnCurve(P_2));
+		P_3 = sstate.getCurve().multiply(P, gamma);
+		System.out.println("P_3 is on curve : " + sstate.getCurve().isOnCurve(P_3));
 
 		secret.add(alpha);
 		secret.add(beta);
@@ -188,7 +191,9 @@ public class BBCryptoSystem {
 		BigInt y_temp2 = secret.get(0).multiply(H_ID).add(secret.get(2));
 		BigInt y = y_temp1.multiply(y_temp2);
 		Point D_0 = pp.sstateBB.getCurve2().multiply(pp.getPointBB(), y);
+		System.out.println("D_O is on curve : " + pp.sstateBB.getCurve2().isOnCurve(D_0));
 		Point D_1 = pp.sstateBB.getCurve2().multiply(pp.getPointBB(), r);
+		System.out.println("D_1 is on curve : " + pp.sstateBB.getCurve2().isOnCurve(D_1));
 		ArrayList<Point> privateKey = new ArrayList<Point>();
 		privateKey.add(D_0);
 		privateKey.add(D_1);
@@ -219,9 +224,11 @@ public class BBCryptoSystem {
 		} while (s.subtract(pp.getqBB()).signum() == -1);
 
 		Complex w = pp.getVbb().pow(s);
+		System.out.println("Enc w: "+ w.toString(16));
 
 		Point C_0 = pp.sstateBB.getCurve().multiply(pp.PointBB, s);
 		System.out.println("Enc C_0: "+C_0.toString(16));
+		System.out.println("C_O is on curve : " + pp.sstateBB.getCurve().isOnCurve(C_0));
 
 
 		BigInt h_id = SupportingAlgorithms.HashToRange(ID.getBytes(), pp.qBB,
@@ -235,6 +242,7 @@ public class BBCryptoSystem {
 		Point C_1_temp2 = pp.sstateBB.getCurve().multiply(pp.P_3, s);
 		Point C_1 = pp.sstateBB.getCurve().add(C_1_temp, C_1_temp2);
 		System.out.println("Enc C_1: "+C_1.toString(16));
+		System.out.println("C_1 is on curve : " + pp.sstateBB.getCurve().isOnCurve(C_1));
 		
 		byte[] psi = SupportingAlgorithms.Canonical(pp.pBB, 1, w);
 		System.out.println("Enc psi: "+new BigInt(1,psi).toString(16));
@@ -335,6 +343,7 @@ public class BBCryptoSystem {
 		Complex c = (Complex) pp.sstateBB.compute(C_0, D_0);
 		Complex d = (Complex) pp.sstateBB.compute(C_1, D_1);
 		Complex w = c.divide(d);
+		System.out.println("Dec w: "+ w.toString(16));
 		
 		byte[] psi = SupportingAlgorithms.Canonical(pp.pBB, 1, w);
 		System.out.println("Dec psi: "+new BigInt(1,psi).toString(16));
@@ -371,7 +380,7 @@ public class BBCryptoSystem {
 		byte[] m = SupportingAlgorithms.HashBytes(ybyte.length, h_, pp.hashfcnBB);
 		
 		byte[] sigma = createByteArray(y_1, x_1, y_0, x_0, ybyte, psi);
-		System.out.println("dec "+new BigInt(1,sigma).toString(16));
+		System.out.println("dec sigma: "+new BigInt(1,sigma).toString(16));
 
 		
 		byte[] eta = messageDigest.digest(sigma);
@@ -391,10 +400,11 @@ public class BBCryptoSystem {
 
 		
 		BigInt rho = SupportingAlgorithms.HashToRange(h__, pp.getqBB(), pp.hashfcnBB);
-		System.out.println("Enc rho: "+rho.toString(16));
+		System.out.println("Dec rho: "+rho.toString(16));
 		
 		BigInt s_temp = u.subtract(rho);
 		BigInt s = s_temp.mod(pp.getqBB());
+		System.out.println("Dec s: "+s.toString(16));
 		
 		Boolean test1 = false;
 		Boolean test2 = false;
@@ -407,14 +417,14 @@ public class BBCryptoSystem {
 		
 		if(test1&&test2 == true) {
 			String message = new String(m);
-			System.out.println(m);
+			System.out.println(message);
 		}
 		else {
 			System.out.println("Invalid Cyphercheck");
 		}
 		
-		String message = new String(m.toString());
-		System.out.println(m);
+		String message = new String(m);
+		System.out.println(message);
 		return null;
 		
 	}
