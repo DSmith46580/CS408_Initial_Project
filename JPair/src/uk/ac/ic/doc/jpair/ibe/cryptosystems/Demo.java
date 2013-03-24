@@ -23,7 +23,7 @@ public class Demo {
 	System.out.println("--------BBCryptoSystem----------");
 	PublicParameter ppbb = BBCryptoSystem.BFSetup1(1024);
 	ArrayList privatekey = BBCryptoSystem.extraction(ID, ppbb);
-	ArrayList quad = BBCryptoSystem.encryption(ID, message, ppbb);
+	ArrayList quad = BBCryptoSystem.encryption(message, ID, ppbb);
 	BBCryptoSystem.decryption(quad, ppbb, privatekey);
 	}
 }

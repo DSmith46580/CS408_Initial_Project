@@ -56,6 +56,7 @@ public class BBCryptoSystem {
 		int n_p = 0;
 		int n_q = 0;
 		Point P;
+		Point P_prime;
 		Point P_1;
 		Point P_2;
 		Point P_3;
@@ -120,8 +121,8 @@ public class BBCryptoSystem {
 		r = new BigInt(n_p, rnd);
 		// P_ = sstate.getCurve2().randomPoint(rnd);
 		// P = sstate.getCurve2().multiply(P_, BigInt.valueOf(12).multiply(r));
-		P = sstate.RandomPointInG2(rnd);
-
+		P = sstate.RandomPointInG1(rnd);
+		P_prime= sstate.RandomPointInG2(rnd);
 		do {
 			alpha = new BigInt(q.bitLength(), rnd);
 		} while (alpha.subtract(q).signum() == -1);
@@ -136,7 +137,7 @@ public class BBCryptoSystem {
 
 		P_1 = sstate.getCurve().multiply(P, alpha);
 		System.out.println("P_1 is on curve : " + sstate.getCurve().isOnCurve(P_1));
-		P_2 = sstate.getCurve2().multiply(P, beta);
+		P_2 = sstate.getCurve2().multiply(P_prime, beta);
 		System.out.println("P_2 is on curve : " + sstate.getCurve2().isOnCurve(P_2));
 		P_3 = sstate.getCurve().multiply(P, gamma);
 		System.out.println("P_3 is on curve : " + sstate.getCurve().isOnCurve(P_3));
@@ -146,7 +147,7 @@ public class BBCryptoSystem {
 		secret.add(gamma);
 
 		Complex v = (Complex) sstate.compute(P_1, P_2);
-		return new PublicParameter(sstate, p, q, P, P_1, P_2, P_3, v, hashfcn);
+		return new PublicParameter(sstate, p, q, P,P_prime, P_1, P_2, P_3, v, hashfcn);
 	}
 
 	/**
@@ -187,12 +188,19 @@ public class BBCryptoSystem {
 			r = new BigInt(pp.getqBB().bitLength(), rnd);
 		} while (r.subtract(pp.getqBB()).signum() == -1);
 		BigInt H_ID = derivation(ID, pp);
-		BigInt y_temp1 = secret.get(0).multiply(secret.get(1)).add(r);
-		BigInt y_temp2 = secret.get(0).multiply(H_ID).add(secret.get(2));
-		BigInt y = y_temp1.multiply(y_temp2);
-		Point D_0 = pp.sstateBB.getCurve2().multiply(pp.getPointBB(), y);
+		System.out.println("Extraction Hid: "+H_ID.toString(16));
+		//BigInt y_temp1 = secret.get(0).multiply(secret.get(1)).add(r);
+		//BigInt y_temp2 = secret.get(0).multiply(H_ID).add(secret.get(2));
+		//BigInt y = y_temp1.multiply(y_temp2);
+		BigInt y = secret.get(0).multiply(secret.get(1)).mod(pp.getqBB());
+		BigInt y_temp= secret.get(0).multiply(H_ID).mod(pp.getqBB());
+		y_temp=y_temp.add(secret.get(2));
+		y_temp=y_temp.multiply(r).mod(pp.getqBB());
+		y=(y.add(y_temp)).mod(pp.getqBB());
+		
+		Point D_0 = pp.sstateBB.getCurve2().multiply(pp.getPointBB2(), y);
 		System.out.println("D_O is on curve : " + pp.sstateBB.getCurve2().isOnCurve(D_0));
-		Point D_1 = pp.sstateBB.getCurve2().multiply(pp.getPointBB(), r);
+		Point D_1 = pp.sstateBB.getCurve2().multiply(pp.getPointBB2(), r);
 		System.out.println("D_1 is on curve : " + pp.sstateBB.getCurve2().isOnCurve(D_1));
 		ArrayList<Point> privateKey = new ArrayList<Point>();
 		privateKey.add(D_0);
@@ -264,16 +272,18 @@ public class BBCryptoSystem {
 		byte[] xi = new byte[zeta.length + psi.length];
 		System.arraycopy(zeta, 0, xi, 0, zeta.length);
 		System.arraycopy(psi, 0, xi, zeta.length, psi.length);
+		
+		xi=messageDigest.digest(xi);
 		System.out.println("Enc xi: "+new BigInt(1,xi).toString(16));
-
+		
 		byte[] h_ = new byte[xi.length + zeta.length];
 		System.arraycopy(xi, 0, h_, 0, xi.length);
 		System.arraycopy(zeta, 0, h_, xi.length, zeta.length);
 		System.out.println("Enc h_: "+new BigInt(1,h_).toString(16));
 
 		byte[] pt = PT.getBytes();
-		byte[] ybyte = SupportingAlgorithms.HashBytes(pt.length, h_,
-				pp.hashfcnBB);
+		byte[] ybyte =SupportingAlgorithms.xorTwoByteArrays(pt,SupportingAlgorithms.HashBytes(pt.length, h_,
+				pp.hashfcnBB));
 		System.out.println("Enc ybyte: "+new BigInt(1,ybyte).toString(16));
 
 		byte[] sigma = createByteArray(y_1, x_1, y_0, x_0, ybyte, psi);
@@ -296,10 +306,12 @@ public class BBCryptoSystem {
 		BigInt rho = SupportingAlgorithms.HashToRange(h__, pp.qBB, pp.getHashfcnBB());
 		System.out.println("Enc rho: "+rho.toString(16));
 		
-		BigInt u_temp = s.add(rho);
-		BigInt u = u_temp.mod(pp.qBB);
+		BigInt u = s.add(rho);
+		//BigInt u = u_temp.mod(pp.qBB);
+		//System.out.println("Enc u_temp: "+u_temp.toString(16));
 		System.out.println("Enc u: "+u.toString(16));
-		
+		System.out.println("Enc s: "+s.toString(16));
+		System.out.println("Enc q_bb: "+pp.qBB.toString(16));
 		ArrayList quad = new ArrayList();
 		quad.add(u);
 		quad.add(C_0);
@@ -334,15 +346,19 @@ public class BBCryptoSystem {
 	public static String decryption(ArrayList quad, PublicParameter pp, ArrayList privatekey) throws NoSuchAlgorithmException {
 		MessageDigest messageDigest =  MessageDigest.getInstance(pp.hashfcnBB);
 		BigInt u = (BigInt) quad.get(0);
+		System.out.println("Dec u: "+u.toString(16));
+		
 		Point C_0 = (Point) quad.get(1);
+		System.out.println("Dec C0: "+C_0.toString(16));
 		Point C_1 = (Point) quad.get(2);
+		System.out.println("Dec C1: "+C_1.toString(16));
 		byte[] ybyte = (byte[]) quad.get(3);
 		
 		Point D_0 = (Point) privatekey.get(0);
 		Point D_1 = (Point) privatekey.get(1);
 		Complex c = (Complex) pp.sstateBB.compute(C_0, D_0);
-		Complex d = (Complex) pp.sstateBB.compute(C_1, D_1);
-		Complex w = c.divide(d);
+		Complex d = (Complex) pp.sstateBB.compute(C_1, pp.getSstateBB().getCurve2().negate(D_1));
+		Complex w = c.multiply(d);
 		System.out.println("Dec w: "+ w.toString(16));
 		
 		byte[] psi = SupportingAlgorithms.Canonical(pp.pBB, 1, w);
@@ -377,7 +393,7 @@ public class BBCryptoSystem {
 
 
 		
-		byte[] m = SupportingAlgorithms.HashBytes(ybyte.length, h_, pp.hashfcnBB);
+		byte[] m = SupportingAlgorithms.xorTwoByteArrays(ybyte,SupportingAlgorithms.HashBytes(ybyte.length, h_, pp.hashfcnBB));
 		
 		byte[] sigma = createByteArray(y_1, x_1, y_0, x_0, ybyte, psi);
 		System.out.println("dec sigma: "+new BigInt(1,sigma).toString(16));
@@ -402,30 +418,37 @@ public class BBCryptoSystem {
 		BigInt rho = SupportingAlgorithms.HashToRange(h__, pp.getqBB(), pp.hashfcnBB);
 		System.out.println("Dec rho: "+rho.toString(16));
 		
-		BigInt s_temp = u.subtract(rho);
-		BigInt s = s_temp.mod(pp.getqBB());
+		BigInt s = u.subtract(rho);
+		System.out.println("Dec U: "+u.toString(16));
+		System.out.println("Dec rho: "+rho.toString(16));
 		System.out.println("Dec s: "+s.toString(16));
+		System.out.println("Dec q_bb: "+pp.getqBB().toString(16));
+		//BigInt s = s_temp.mod(pp.getqBB());
+		System.out.println("Dec s: "+s.toString(16));
+		
+		String message = new String(m);
 		
 		Boolean test1 = false;
 		Boolean test2 = false;
-		if ( w == pp.getVbb().pow(s)){
+		if ( w.equals(pp.getVbb().pow(s))){
 			test1=true;
+			
 		}
-		if(C_0 == pp.sstateBB.getCurve2().multiply(pp.getPointBB(), s)) {
+		if(C_0.equals( pp.sstateBB.getCurve().multiply(pp.getPointBB(), s))) {
 			test2=true;
 		}
-		
+		System.out.println("test1 "+test1);
+		System.out.println("test2 "+test2);
 		if(test1&&test2 == true) {
-			String message = new String(m);
+			message = new String(m);
 			System.out.println(message);
 		}
 		else {
 			System.out.println("Invalid Cyphercheck");
 		}
 		
-		String message = new String(m);
-		System.out.println(message);
-		return null;
+		
+		return message;
 		
 	}
 

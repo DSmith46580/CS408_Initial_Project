@@ -1,3 +1,4 @@
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Random;
 
@@ -15,22 +16,19 @@ public class TEST {
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		Pairing pair = Predefined.ssTate(); 
 		
-		Random rnd = new SecureRandom();
+		BigInteger s= new BigInteger("c467281144fc70d76b54befa588490ea8da866d2",16);
+		BigInteger q= new BigInteger ("8000000000000000000000000000000000020001",16);
+		BigInteger rho= new BigInteger ("3dd4b3a7ef879b3d8994f8eaf89a5a38ac4445f3",16);
 		
-		Point P= pair.RandomPointInG2(rnd);
-		BigInt s=new BigInt(160, rnd);
-		Point Ppub= pair.getCurve2().multiply(P, s);
+		System.out.println("q is prime: "+ q.isProbablePrime(80));
 		
-		Point QID= pair.RandomPointInG1(rnd);
-		Point SID=pair.getCurve().multiply(QID, s);
+		BigInteger u= (s.add(rho));
 		
-		Complex a = (Complex) pair.compute(QID, Ppub);
-		System.out.println(a.toString(16));
+		System.out.println("u="+u.toString(16));
 		
-		Complex b=(Complex) pair.compute(SID, P);
-		System.out.println(b.toString(16));
+		BigInteger s2 = (u.subtract(rho));
+		System.out.println("s="+s2.toString(16));
 		
 		
 

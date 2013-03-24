@@ -60,18 +60,20 @@ public class PublicParameter {
 	BigInt pBB;
 	BigInt qBB;
 	Point PointBB;
+	Point PointBB2;
 	Point P_1;
 	Point P_2;
 	Point P_3;
 	Complex vbb;
 	String hashfcnBB;
 	
-	public PublicParameter(TatePairing sstate2, BigInt p2, BigInt q2, Point p3,
+	public PublicParameter(TatePairing sstate2, BigInt p2, BigInt q2, Point p, Point p_prime,
 			Point p_1, Point p_2, Point p_3, Complex v, String hashfcn) {
 		sstateBB = sstate2;
 		pBB = p2;
 		qBB = q2;
-		PointBB = p3;
+		PointBB = p;
+		PointBB2=p_prime;
 		P_1 = p_1;
 		P_2 = p_2;
 		P_3 = p_3;
@@ -93,6 +95,10 @@ public class PublicParameter {
 
 	public Point getPointBB() {
 		return PointBB;
+	}
+	
+	public Point getPointBB2() {
+		return PointBB2;
 	}
 
 	public Point getP_1() {
