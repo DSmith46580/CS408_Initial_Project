@@ -12,11 +12,17 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 
 public class EmailWindow extends JPanel implements Observer {
+	
+	JComboBox<String> DropDown;
+	JTextArea messageField;
+	JTextField IDField;
 
 	public EmailWindow(Controller cont) {
 		
@@ -26,7 +32,7 @@ public class EmailWindow extends JPanel implements Observer {
 		Border b = BorderFactory.createEtchedBorder(EtchedBorder.RAISED);
 		setBorder(b);
 		
-		JComboBox<String> DropDown = new JComboBox<String>();
+		DropDown = new JComboBox<String>();
 		DropDown.setPreferredSize(new Dimension(400, 20));
 	
 		
@@ -50,7 +56,7 @@ public class EmailWindow extends JPanel implements Observer {
 		g.gridy = 1;
 		add(cLabelPanel1, g);
 		
-		JTextField IDField = new JTextField(30);
+		IDField = new JTextField(30);
 		JPanel IDFieldPanel = new JPanel();
 		IDFieldPanel.add(IDField);
 		g.weightx = 0;
@@ -68,12 +74,15 @@ public class EmailWindow extends JPanel implements Observer {
 		g.gridy = 3;
 		add(cLabelPanel, g);
 		
-		JTextField messageField = new JTextField(50);
+		messageField = new JTextArea(15,30);
+		messageField.setLineWrap(true);
+		messageField.setWrapStyleWord(true);
+		JScrollPane scrollPane = new JScrollPane(messageField);
 		int x = messageField.getX();
 		Dimension preferredSize = new Dimension(x, 200);
 		messageField.setPreferredSize(preferredSize );
 		JPanel messageFieldPanel = new JPanel();
-		messageFieldPanel.add(messageField);
+		messageFieldPanel.add(scrollPane);
 		g.weightx = 0;
 		g.gridwidth = 2;
 		g.gridx = 0;
