@@ -118,8 +118,6 @@ public class BFCryptoSystem {
 		p = fp_p.getP();
 
 		r = new BigInt(n_p, rnd);
-		// P_ = sstate.getCurve2().randomPoint(rnd);
-		// P = sstate.getCurve2().multiply(P_, BigInt.valueOf(12).multiply(r));
 		P = sstate.RandomPointInG2(rnd);
 
 		do {

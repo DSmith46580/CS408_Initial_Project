@@ -252,7 +252,7 @@ public class SupportingAlgorithms {
 		if (i == 1) {
 			//s = b_(256^l) || a_(256^l)
 			s = new byte[b_array.length + a_array.length];
-			System.arraycopy(b_array, 0, s, 0, a_array.length);
+			System.arraycopy(b_array, 0, s, 0, b_array.length);
 			System.arraycopy(a_array, 0, s, b_array.length, a_array.length);
 		}
 

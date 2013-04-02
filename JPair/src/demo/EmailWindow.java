@@ -47,7 +47,7 @@ public class EmailWindow extends JPanel implements Observer {
 		DropDown.addItem(new String("Boneh-Boyen Cryptosystem"));
 		
 		
-		JLabel cLabel1 = new JLabel("ID :");
+		JLabel cLabel1 = new JLabel(" Recipient ID :");
 		JPanel cLabelPanel1 = new JPanel();
 		cLabelPanel1.add(cLabel1);
 		g.weightx = 0;

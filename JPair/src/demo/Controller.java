@@ -14,7 +14,7 @@ public class Controller extends Observable {
 
 	EmailWindow emailw;
 	ExplanationWindow explanw;
-	private QueryButtonListener listener;
+	private ButtonListener listener;
 	int count;
 
 	public Controller(GuiWindow gw) {
@@ -31,7 +31,7 @@ public class Controller extends Observable {
 
 	public ActionListener getQueryButtonListener() {
 		if (listener == null) {
-			listener = new QueryButtonListener(this);
+			listener = new ButtonListener(this);
 		}
 		return listener;
 	}
@@ -77,7 +77,7 @@ public class Controller extends Observable {
 							+ "\n"
 							+ "1) Select which one from the dropdown menu,"
 							+ "\n"
-							+ "2) Enter your ID (Which here is as an email address, don't worry it can be a fictional one) "
+							+ "2) Enter the recipient ID. I.E. Who you would send this message to. (Which here is as an email address, don't worry it can be a fictional one) "
 							+ "\n"
 							+ "3) Enter your message and then hit the send button");
 			explanw.setCount(count + 1);
@@ -117,7 +117,7 @@ public class Controller extends Observable {
 					explanw.textArea
 							.setText("You have chosen the "
 									+ choice
-									+ " The Boneh-Franklin scheme is an Identity based encryption system proposed by Dan Boneh and Matthew K. Franklin in 2001. It is an application of "
+									+ ". The Boneh-Franklin scheme is an Identity based encryption system proposed by Dan Boneh and Matthew K. Franklin in 2001. It is an application of "
 									+ "pairings (Weil pairing) over elliptic curves and finite fields."
 									+ " The Scheme has five main methods: "
 									+ "\n"

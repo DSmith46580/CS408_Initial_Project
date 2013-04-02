@@ -4,11 +4,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.security.NoSuchAlgorithmException;
 
-public class QueryButtonListener implements ActionListener {
+public class ButtonListener implements ActionListener {
 	
 	private Controller ctrl;
 	
-	public QueryButtonListener(Controller c) {
+	public ButtonListener(Controller c) {
 		this.ctrl = c;
 	}
 
